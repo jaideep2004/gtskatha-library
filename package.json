@@ -6,19 +6,34 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:katha-status": "tsx scripts/migrate-katha-status.ts",
+    "migrate:katha-status:apply": "tsx scripts/migrate-katha-status.ts --apply",
+    "seed:admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.1.1",
+    "@mui/material": "^9.1.1",
+    "bcryptjs": "^3.0.3",
+    "emailjs": "^5.0.1",
+    "mongoose": "^9.7.0",
     "next": "16.2.9",
+    "next-auth": "^4.24.14",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

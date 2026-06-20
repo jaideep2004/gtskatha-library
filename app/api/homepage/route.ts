@@ -7,12 +7,25 @@ import { requireAdmin } from '@/lib/apiAuth';
 import { ADMIN_MUTATION_LIMIT, enforceRateLimit } from '@/lib/rateLimit';
 import { ValidationError, validateHomepageInput } from '@/lib/validation';
 
+const publicKathaMatch = {
+  status: { $ne: 'archived' as const },
+  $or: [{ status: 'published' as const }, { status: { $exists: false }, published: true }],
+};
+
 export async function GET() {
   try {
     await connectDB();
     const config = await HomepageConfig.findOne()
-      .populate('heroKatha', 'title slug type thumbnail duration')
-      .populate('featuredKatha', 'title slug type thumbnail duration description views')
+      .populate({
+        path: 'heroKatha',
+        select: 'title slug type thumbnail duration',
+        match: publicKathaMatch,
+      })
+      .populate({
+        path: 'featuredKatha',
+        select: 'title slug type thumbnail duration description views',
+        match: publicKathaMatch,
+      })
       .populate('featuredSeries', 'title slug thumbnail description')
       .lean();
     return NextResponse.json({ success: true, data: config });

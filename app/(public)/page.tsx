@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: 'Discover Sikh kathas, gurbani vichar, and spiritual discourses by Bhai Sahib Ji.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   let recentKathas: IKatha[] = [];
   let heroKatha: IKatha | undefined;

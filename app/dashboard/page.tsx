@@ -32,6 +32,7 @@ export default async function UserDashboardPage() {
   await connectDB();
 
   const published: Record<string, unknown> = {
+    status: { $ne: 'archived' },
     $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
   };
   const [
@@ -50,7 +51,11 @@ export default async function UserDashboardPage() {
     Favorite.countDocuments({ userId }),
     ContinueListening.find({ userId, completed: { $ne: true } })
       .sort({ lastPlayedAt: -1 }).limit(4)
-      .populate('kathaId', 'title slug type thumbnail duration seriesId authorName').lean(),
+      .populate({
+        path: 'kathaId',
+        select: 'title slug type thumbnail duration seriesId authorName status published',
+        match: published,
+      }).lean(),
     Katha.find(published).sort({ createdAt: -1 }).limit(5)
       .populate('seriesId', 'title').lean(),
     Series.find({ archived: { $ne: true } }).sort({ featured: -1, sortOrder: 1 }).limit(4).lean(),
@@ -61,12 +66,13 @@ export default async function UserDashboardPage() {
 
   const readIds = new Set(readReceipts.map((item) => String(item.notificationId)));
   const unreadCount = Math.max(0, await Notification.countDocuments() - readIds.size);
+  const visibleContinueItems = continueItems.filter((item) => item.kathaId);
 
   const stats = [
     { label: 'Audio Kathas', value: audioCount, tone: 'orange', subtitle: 'Total available' },
     { label: 'Video Kathas', value: videoCount, tone: 'violet', subtitle: 'Total available' },
     { label: 'My Library', value: favoriteCount, tone: 'green', subtitle: 'Saved kathas' },
-    { label: 'Continue Listening', value: continueItems.length, tone: 'gold', subtitle: 'In progress' },
+    { label: 'Continue Listening', value: visibleContinueItems.length, tone: 'gold', subtitle: 'In progress' },
     { label: 'Notifications', value: unreadCount, tone: 'blue', subtitle: 'New updates' },
   ];
 
@@ -84,9 +90,9 @@ export default async function UserDashboardPage() {
       <section className="ud-primary-grid">
         <div className="ud-panel" id="continue">
           <div className="ud-panel-head"><h2>Continue Listening</h2><Link href="/audio">View all</Link></div>
-          {continueItems.length ? (
+          {visibleContinueItems.length ? (
             <div className="ud-progress-list">
-              {continueItems.map((item) => {
+              {visibleContinueItems.map((item) => {
                 const katha = item.kathaId as unknown as {
                   _id: string; title: string; slug: string; type: 'audio' | 'video';
                   thumbnail?: string; duration?: number; authorName?: string;

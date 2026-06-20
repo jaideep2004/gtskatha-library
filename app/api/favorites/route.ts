@@ -34,10 +34,17 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-    if (!await Katha.exists({ _id: kathaId })) {
+    if (!await Katha.exists({
+      _id: kathaId,
+      status: { $ne: 'archived' },
+      $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
+    })) {
       return NextResponse.json({ success: false, error: 'Katha not found' }, { status: 404 });
     }
     const fav = await addFavorite(session.user.id, kathaId);
+    if (!fav) {
+      return NextResponse.json({ success: false, error: 'Katha not found' }, { status: 404 });
+    }
     return NextResponse.json({ success: true, data: fav }, { status: 201 });
   } catch (error) {
     console.error('POST /api/favorites', error);

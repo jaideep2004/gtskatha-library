@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const katha = await Katha.exists({
       _id: kathaId,
+      status: { $ne: 'archived' },
       $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
     });
     if (!katha) {

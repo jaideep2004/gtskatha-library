@@ -29,10 +29,16 @@ export async function GET(req: NextRequest) {
     const items = await ContinueListening.find({ userId: session.user.id })
       .sort({ lastPlayedAt: -1 })
       .limit(10)
-      .populate('kathaId')
+      .populate({
+        path: 'kathaId',
+        match: {
+          status: { $ne: 'archived' },
+          $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
+        },
+      })
       .lean();
 
-    return NextResponse.json({ success: true, data: items });
+    return NextResponse.json({ success: true, data: items.filter((item) => item.kathaId) });
   } catch (error) {
     console.error('GET /api/continue-listening', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch' }, { status: 500 });
@@ -65,7 +71,11 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-    const exists = await Katha.exists({ _id: kathaId });
+    const exists = await Katha.exists({
+      _id: kathaId,
+      status: { $ne: 'archived' },
+      $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
+    });
     if (!exists) {
       return NextResponse.json({ success: false, error: 'Katha not found' }, { status: 404 });
     }

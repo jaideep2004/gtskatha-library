@@ -17,15 +17,16 @@ export async function GET() {
 
   try {
     await connectDB();
+    const activeKathas = { status: { $ne: 'archived' as const } };
 
     const results = await Promise.allSettled([
-      Katha.countDocuments(),                                                          // 0: kathaCount
-      Katha.aggregate([{ $group: { _id: null, total: { $sum: '$views' } } }]),        // 1: totalViews
+      Katha.countDocuments(activeKathas),                                               // 0: kathaCount
+      Katha.aggregate([{ $match: activeKathas }, { $group: { _id: null, total: { $sum: '$views' } } }]), // 1: totalViews
       User.countDocuments(),                                                           // 2: userCount
       Series.countDocuments(),                                                         // 3: seriesCount
       Category.countDocuments(),                                                       // 4: categoryCount
       UserNotification.countDocuments({ isRead: false }),                             // 5: unreadNotificationCount
-      Katha.find().sort({ createdAt: -1 }).limit(10)
+      Katha.find(activeKathas).sort({ createdAt: -1 }).limit(10)
         .select('title slug type createdAt').lean(),                                   // 6: recentActivity
     ]);
 

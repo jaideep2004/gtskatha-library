@@ -1,7 +1,7 @@
 # Graph Report - gts-katha  (2026-06-21)
 
 ## Corpus Check
-- 153 files · ~511,142 words
+- 153 files · ~477,626 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

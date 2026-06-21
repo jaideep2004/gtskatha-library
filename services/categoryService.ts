@@ -8,9 +8,22 @@ export async function getCategories() {
   return Category.find({ archived: { $ne: true } }).sort({ name: 1 }).lean();
 }
 
-export async function getCategoriesWithCount() {
+interface CategoryCountOptions {
+  limit?: number;
+  sort?: 'name' | 'newest';
+}
+
+export async function getCategoriesWithCount(options: CategoryCountOptions = {}) {
   await connectDB();
-  const categories = await Category.find({ archived: { $ne: true } }).sort({ name: 1 }).lean();
+  const { limit, sort = 'name' } = options;
+  const query = Category.find({ archived: { $ne: true } })
+    .sort(sort === 'newest' ? { _id: -1 } : { name: 1 });
+
+  if (limit !== undefined) {
+    query.limit(Math.max(0, limit));
+  }
+
+  const categories = await query.lean();
   const categoryIds = categories.map((category) => category._id);
   const counts = await Katha.aggregate<{
     _id: { categoryId: typeof categoryIds[number]; type: 'audio' | 'video' };

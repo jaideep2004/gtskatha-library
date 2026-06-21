@@ -97,7 +97,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
       <div className="h-bg" aria-hidden>
         <div
           className="h-bg-photo"
-          style={{ backgroundImage: "url('/images/gtshero0.png')" }}
+          style={{ backgroundImage: "url('/images/gtshero1.png')" }}
         />
         <div className="h-bg-overlay" />
       </div>
@@ -225,7 +225,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           position: absolute;
           inset: 0;
           background-size: cover;
-          background-position: center center;
+          background-position: center -160px;
           background-repeat: no-repeat;
           background-color: #f7f3ec;
         }

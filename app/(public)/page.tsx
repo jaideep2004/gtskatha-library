@@ -48,7 +48,7 @@ export default async function HomePage() {
             .populate('kathaId', 'title slug type thumbnail authorName duration status published')
             .lean()
         : null,
-      getCategoriesWithCount(),
+      getCategoriesWithCount({ limit: 4, sort: 'newest' }),
     ]);
 
     recentKathas = recent as unknown as IKatha[];

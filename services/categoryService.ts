@@ -61,7 +61,7 @@ export async function updateCategory(slug: string, data: Record<string, unknown>
   return Category.findOneAndUpdate(
     { slug },
     { $set: data },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 
@@ -77,6 +77,6 @@ export async function deleteCategory(slug: string) {
   return Category.findOneAndUpdate(
     { slug },
     { $set: { archived: true, archivedAt: new Date() } },
-    { new: true }
+    { returnDocument: "after" }
   );
 }

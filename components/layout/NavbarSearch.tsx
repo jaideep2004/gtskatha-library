@@ -18,7 +18,17 @@ function hasTwoWords(value: string) {
   return value.trim().split(/\s+/).filter(Boolean).length >= 2;
 }
 
-export default function NavbarSearch() {
+interface NavbarSearchProps {
+  mobile?: boolean;
+  autoFocus?: boolean;
+  onNavigate?: () => void;
+}
+
+export default function NavbarSearch({
+  mobile = false,
+  autoFocus = false,
+  onNavigate,
+}: NavbarSearchProps) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
@@ -68,12 +78,13 @@ export default function NavbarSearch() {
     const trimmed = query.trim();
     if (!trimmed) return;
     setOpen(false);
+    onNavigate?.();
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   }
 
   return (
-    <div className="nav-search-root" ref={rootRef}>
-      <form className="navbar-search-form" onSubmit={(event) => { event.preventDefault(); navigateToSearch(); }}>
+    <div className={`nav-search-root ${mobile ? 'nav-search-mobile' : ''}`} ref={rootRef}>
+      <form className="navbar-search-form" onSubmit={(event) => { event.preventDefault(); navigateToSearch(); }} role="search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="navbar-search-icon" aria-hidden>
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
@@ -95,6 +106,7 @@ export default function NavbarSearch() {
           aria-label="Search kathas"
           aria-controls="navbar-search-results"
           autoComplete="off"
+          autoFocus={autoFocus}
         />
       </form>
 
@@ -109,7 +121,10 @@ export default function NavbarSearch() {
               key={item._id}
               href={`/${item.type}/${item.slug}`}
               className="nav-search-result"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                onNavigate?.();
+              }}
             >
               <span className="nav-search-thumb">
                 {item.thumbnail
@@ -150,6 +165,9 @@ export default function NavbarSearch() {
         .nav-search-result em{font-style:normal;font-size:9px;text-transform:uppercase;padding:4px 6px;border-radius:4px;background:#f6ead7;color:#bd700b}
         .nav-search-empty{padding:20px 10px;text-align:center;color:#747b86;font-size:13px}
         .nav-search-all{width:100%;min-height:38px;margin-top:4px;border-top:1px solid #eee8df;color:#bd700b;font-size:12px;font-weight:700}
+        .nav-search-mobile .navbar-search-form{width:100%;height:46px;border-radius:12px;box-shadow:0 6px 20px rgba(25,34,47,.07)}
+        .nav-search-mobile .navbar-search-input{width:100%;font-size:14px}
+        .nav-search-mobile .nav-search-results{position:static;width:100%;max-height:min(430px,55vh);overflow-y:auto;margin-top:8px;box-shadow:none;border-radius:12px}
       `}</style>
     </div>
   );

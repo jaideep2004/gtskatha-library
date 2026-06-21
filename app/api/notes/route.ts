@@ -54,7 +54,7 @@ export async function PUT(req: NextRequest) {
   const note = await KathaNote.findOneAndUpdate(
     { userId: auth.session.user.id, kathaId },
     { $set: { content: content.trim() } },
-    { new: true, upsert: true, runValidators: true }
+    { returnDocument: "after", upsert: true, runValidators: true }
   ).lean();
 
   return NextResponse.json({ success: true, data: note });

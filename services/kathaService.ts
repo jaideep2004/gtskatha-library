@@ -33,6 +33,28 @@ function visibleKathaQuery(includeUnpublished: boolean): Record<string, unknown>
   return includeUnpublished ? { status: { $ne: 'archived' } } : publicKathaQuery();
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildKathaSearchClauses(value: string): Record<string, unknown>[] {
+  const terms = value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((term) => new RegExp(escapeRegExp(term.slice(0, 40)), 'i'));
+
+  return terms.map((term) => ({
+    $or: [
+      { title: term },
+      { authorName: term },
+      { description: term },
+      { tags: term },
+    ],
+  }));
+}
+
 export async function getKathas(params: KathaSearchParams = {}) {
   await connectDB();
   const {
@@ -50,8 +72,10 @@ export async function getKathas(params: KathaSearchParams = {}) {
   const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
   const query: Record<string, unknown> = visibleKathaQuery(includeUnpublished);
 
-  if (q) {
-    query.$text = { $search: q };
+  if (q?.trim()) {
+    const searchClauses = buildKathaSearchClauses(q);
+    const visibilityClauses = Array.isArray(query.$and) ? query.$and : [];
+    query.$and = [...visibilityClauses, ...searchClauses];
   }
   if (type) query.type = type;
   if (category) {
@@ -127,7 +151,11 @@ export async function getRecentKathas(limit = 10) {
 
 export async function incrementViews(slug: string) {
   await connectDB();
-  return Katha.findOneAndUpdate({ slug }, { $inc: { views: 1 } }, { new: true });
+  return Katha.findOneAndUpdate(
+    { slug },
+    { $inc: { views: 1 } },
+    { returnDocument: "after" }
+  );
 }
 
 export async function createKatha(data: Partial<{
@@ -189,7 +217,7 @@ export async function updateKatha(slug: string, data: Record<string, unknown>) {
       ...(Object.keys(setData).length ? { $set: setData } : {}),
       ...(Object.keys(unsetData).length ? { $unset: unsetData } : {}),
     },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 
@@ -204,7 +232,7 @@ export async function archiveKatha(slug: string) {
         archivedAt: new Date(),
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 
@@ -220,7 +248,9 @@ export async function getArchivedKathas(params: Pick<KathaSearchParams, 'q' | 't
   const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
   const query: Record<string, unknown> = { status: 'archived' };
 
-  if (q) query.$text = { $search: q };
+  if (q?.trim()) {
+    query.$and = buildKathaSearchClauses(q);
+  }
   if (type) query.type = type;
 
   const skip = (safePage - 1) * safeLimit;
@@ -256,7 +286,7 @@ export async function restoreArchivedKatha(id: string) {
       $set: { status: 'draft', published: false },
       $unset: { archivedAt: 1 },
     },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 

@@ -44,7 +44,7 @@ export async function updateInteractionSettings(input: {
       },
       $setOnInsert: { key: 'global' },
     },
-    { new: true, upsert: true, runValidators: true }
+    { returnDocument: "after", upsert: true, runValidators: true }
   ).lean();
 }
 

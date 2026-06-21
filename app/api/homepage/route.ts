@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const config = await HomepageConfig.findOneAndUpdate(
       {},
       { $set: update },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
 
     return NextResponse.json({ success: true, data: config });

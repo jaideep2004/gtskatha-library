@@ -34,7 +34,7 @@ export async function updateSeries(slug: string, data: Record<string, unknown>) 
   return Series.findOneAndUpdate(
     { slug },
     { $set: data },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 
@@ -67,6 +67,6 @@ export async function deleteSeries(slug: string) {
   return Series.findOneAndUpdate(
     { slug },
     { $set: { archived: true, archivedAt: new Date(), featured: false } },
-    { new: true }
+    { returnDocument: "after" }
   );
 }

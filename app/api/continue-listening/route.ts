@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const updated = await ContinueListening.findOneAndUpdate(
       { userId: session.user.id, kathaId },
       { currentTime: safeTime, duration, completed, lastPlayedAt: new Date() },
-      { new: true, upsert: true, runValidators: true }
+      { returnDocument: "after", upsert: true, runValidators: true }
     );
 
     return NextResponse.json({ success: true, data: updated });

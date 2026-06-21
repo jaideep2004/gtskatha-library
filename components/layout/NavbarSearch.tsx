@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { getMediaUrl } from '@/lib/media';
+import { isSearchQueryReady, MIN_SEARCH_QUERY_LENGTH } from '@/lib/search';
 
 interface SearchResult {
   _id: string;
@@ -12,10 +13,6 @@ interface SearchResult {
   type: 'audio' | 'video';
   thumbnail?: string;
   authorName?: string;
-}
-
-function hasTwoWords(value: string) {
-  return value.trim().split(/\s+/).filter(Boolean).length >= 2;
 }
 
 interface NavbarSearchProps {
@@ -37,7 +34,7 @@ export default function NavbarSearch({
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const trimmed = query.trim();
-    if (!hasTwoWords(trimmed)) {
+    if (!isSearchQueryReady(trimmed)) {
       return;
     }
 
@@ -76,7 +73,7 @@ export default function NavbarSearch({
 
   function navigateToSearch() {
     const trimmed = query.trim();
-    if (!trimmed) return;
+    if (!isSearchQueryReady(trimmed)) return;
     setOpen(false);
     onNavigate?.();
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
@@ -95,16 +92,17 @@ export default function NavbarSearch({
           onChange={(event) => {
             const value = event.target.value;
             setQuery(value);
-            if (!hasTwoWords(value)) {
+            if (!isSearchQueryReady(value)) {
               setResults([]);
               setLoading(false);
               setOpen(false);
             }
           }}
-          onFocus={() => hasTwoWords(query) && setOpen(true)}
+          onFocus={() => isSearchQueryReady(query) && setOpen(true)}
           className="navbar-search-input"
           aria-label="Search kathas"
           aria-controls="navbar-search-results"
+          minLength={MIN_SEARCH_QUERY_LENGTH}
           autoComplete="off"
           autoFocus={autoFocus}
         />

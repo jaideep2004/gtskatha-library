@@ -124,7 +124,7 @@ export default function Navbar() {
         <div className={`navbar-mobile-search ${mobileSearchOpen ? 'open' : ''}`}>
           <div className="container">
             <NavbarSearch mobile autoFocus={mobileSearchOpen} onNavigate={() => setMobileSearchOpen(false)} />
-            <p>Enter at least two words — for example, “Kirtan Sohila”.</p>
+            <p>Enter at least 2 characters — for example, “ki” finds “Kirtan”.</p>
           </div>
         </div>
       </nav>

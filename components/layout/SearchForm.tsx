@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { isSearchQueryReady, MIN_SEARCH_QUERY_LENGTH } from '@/lib/search';
 
 export default function SearchForm({ defaultQ = '' }: { defaultQ?: string }) {
   const [query, setQuery] = useState(defaultQ);
@@ -9,9 +10,9 @@ export default function SearchForm({ defaultQ = '' }: { defaultQ?: string }) {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (query.trim()) {
+    if (isSearchQueryReady(query)) {
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-    } else {
+    } else if (!query.trim()) {
       router.push('/search');
     }
   }
@@ -37,6 +38,7 @@ export default function SearchForm({ defaultQ = '' }: { defaultQ?: string }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search kathas"
+          minLength={MIN_SEARCH_QUERY_LENGTH}
           autoFocus={false}
         />
       </div>

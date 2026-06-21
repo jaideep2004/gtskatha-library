@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKathas } from '@/services/kathaService';
+import { isSearchQueryReady } from '@/lib/search';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const q = searchParams.get('q') ?? '';
 
-    if (!q.trim()) {
+    if (!isSearchQueryReady(q)) {
       return NextResponse.json({ success: true, data: [], total: 0 });
     }
 

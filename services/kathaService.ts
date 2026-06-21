@@ -14,6 +14,7 @@ import { KathaSearchParams } from '@/types';
 import { DomainError } from '@/lib/domainError';
 import { deleteFile } from '@/services/uploadService';
 import type { MediaFolder } from '@/lib/media';
+import { isSearchQueryReady } from '@/lib/search';
 
 function publicKathaQuery(): Record<string, unknown> {
   return {
@@ -72,6 +73,9 @@ export async function getKathas(params: KathaSearchParams = {}) {
   const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
   const query: Record<string, unknown> = visibleKathaQuery(includeUnpublished);
 
+  if (q?.trim() && !isSearchQueryReady(q)) {
+    return emptyResult(safePage, safeLimit);
+  }
   if (q?.trim()) {
     const searchClauses = buildKathaSearchClauses(q);
     const visibilityClauses = Array.isArray(query.$and) ? query.$and : [];

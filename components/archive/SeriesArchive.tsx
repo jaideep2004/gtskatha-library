@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getMediaUrl } from "@/lib/media";
+import { MIN_SEARCH_QUERY_LENGTH } from "@/lib/search";
 import type { ISeries } from "@/types";
 
 interface Props {
@@ -31,6 +32,7 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 							<input
 								name='q'
 								defaultValue={q}
+								minLength={MIN_SEARCH_QUERY_LENGTH}
 								placeholder='Search series by title or topic...'
 							/>
 						</label>

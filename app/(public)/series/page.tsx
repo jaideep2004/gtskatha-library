@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import SeriesArchive from '@/components/archive/SeriesArchive';
 import { getAllSeries, getSeriesEpisodeCounts } from '@/services/seriesService';
+import { isSearchQueryReady } from '@/lib/search';
 import type { ISeries } from '@/types';
 
 export const metadata: Metadata = {
@@ -20,7 +21,9 @@ export default async function SeriesPage({ searchParams }: Props) {
   ]);
   let series = rawSeries as unknown as ISeries[];
   const q = params.q?.trim().toLocaleLowerCase();
-  if (q) {
+  if (q && !isSearchQueryReady(q)) {
+    series = [];
+  } else if (q) {
     series = series.filter((item) =>
       `${item.title} ${item.description ?? ''}`.toLocaleLowerCase().includes(q)
     );

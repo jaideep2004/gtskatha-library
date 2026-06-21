@@ -5,6 +5,7 @@ import type { ICategory, IKatha, ISeries } from "@/types";
 import ArchivePlayButton from "@/components/archive/ArchivePlayButton";
 import ArchiveTimeline from "@/components/archive/ArchiveTimeline";
 import ArchiveFilters from "@/components/archive/ArchiveFilters";
+import { MIN_SEARCH_QUERY_LENGTH } from "@/lib/search";
 
 interface ArchiveProps {
 	type: "audio" | "video";
@@ -83,6 +84,7 @@ export default function KathaArchive({
 							<input
 								name='q'
 								defaultValue={query.q}
+								minLength={MIN_SEARCH_QUERY_LENGTH}
 								placeholder={`Search ${type} kathas by title, speaker or series...`}
 							/>
 						</label>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { formatDate } from '@/lib/utils';
+import AdminThumbnail from '@/components/admin/AdminThumbnail';
 import { toast } from 'sonner';
 
 interface ArchivedKatha {
@@ -123,6 +124,7 @@ export default function ArchivedKathasPage() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th>Artwork</th>
                 <th>Title</th>
                 <th>Type</th>
                 <th>Category</th>
@@ -134,10 +136,13 @@ export default function ArchivedKathasPage() {
             <tbody>
               {kathas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="empty-cell">No archived kathas.</td>
+                  <td colSpan={7} className="empty-cell">No archived kathas.</td>
                 </tr>
               ) : kathas.map((katha) => (
                 <tr key={katha._id}>
+                  <td>
+                    <AdminThumbnail folder="thumbnails" value={katha.thumbnail} alt={`${katha.title} thumbnail`} />
+                  </td>
                   <td>
                     <div className="admin-table-title">{katha.title}</div>
                     <code className="slug-cell">{katha.slug}</code>

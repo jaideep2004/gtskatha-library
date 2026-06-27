@@ -30,6 +30,7 @@ export default function FileUpload({
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [selectedName, setSelectedName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sessionRef = useRef('');
@@ -65,6 +66,7 @@ export default function FileUpload({
     setError('');
     setProgress(0);
     setProcessing(false);
+    setSelectedName(file.name);
 
     if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
@@ -125,6 +127,7 @@ export default function FileUpload({
       onUploaded(completePayload.data.filename);
       setProgress(100);
       setProcessing(false);
+      setSelectedName('');
       setPreviewUrl('');
       sessionRef.current = '';
       toast.success(`${label} uploaded.`);
@@ -139,6 +142,7 @@ export default function FileUpload({
         setError('Upload cancelled');
         toast.info(`${label} upload cancelled.`);
         setProgress(0);
+        setSelectedName('');
       } else {
         const message = uploadError instanceof Error ? uploadError.message : 'Network error during upload';
         setError(message);
@@ -182,11 +186,16 @@ export default function FileUpload({
 
       <div
         className={`file-upload-area ${uploading ? 'uploading' : ''} ${uploaded ? 'has-file' : ''}`}
-        onClick={() => inputRef.current?.click()}
-        role="button"
-        tabIndex={0}
+        onClick={() => {
+          if (!uploading) inputRef.current?.click();
+        }}
+        role={uploading ? 'group' : 'button'}
+        tabIndex={uploading ? -1 : 0}
+        aria-busy={uploading}
         aria-label={`Upload ${label}`}
-        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (!uploading && e.key === 'Enter') inputRef.current?.click();
+        }}
       >
         <input
           ref={inputRef}
@@ -198,9 +207,25 @@ export default function FileUpload({
         />
 
         {uploading ? (
-          <div className="file-upload-status">
-            <div className="file-upload-spinner" aria-label="Uploading" />
-            <span>{processing ? 'Processing media…' : `Uploading ${progress}%`}</span>
+          <div className="file-upload-status file-upload-status-uploading">
+            <div className="file-upload-mainline">
+              <div className="file-upload-spinner" aria-label="Uploading" />
+              <div className="file-upload-copy">
+                <span>{processing ? 'Processing media…' : `Uploading ${label.toLowerCase()}`}</span>
+                {selectedName && <small>{selectedName}</small>}
+              </div>
+              <strong className="file-upload-percent">{progress}%</strong>
+            </div>
+            <div
+              className="file-progress-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              aria-label={`${label} upload progress`}
+            >
+              <span style={{ width: `${progress}%` }} />
+            </div>
             <button
               type="button"
               className="file-upload-cancel"
@@ -221,7 +246,13 @@ export default function FileUpload({
             <button
               type="button"
               className="file-upload-clear"
-              onClick={(e) => { e.stopPropagation(); setUploaded(''); onUploaded(''); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setUploaded('');
+                setSelectedName('');
+                setProgress(0);
+                onUploaded('');
+              }}
               aria-label="Remove file"
             >
               ×
@@ -284,7 +315,6 @@ export default function FileUpload({
         }
 
         .file-upload-area.uploading {
-          pointer-events: none;
           opacity: 0.7;
         }
 
@@ -301,6 +331,67 @@ export default function FileUpload({
           width: 100%;
           font-size: var(--font-size-sm);
           color: var(--color-text-secondary);
+        }
+
+        .file-upload-status-uploading {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .file-upload-mainline {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          width: 100%;
+        }
+
+        .file-upload-copy {
+          display: grid;
+          gap: 2px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .file-upload-copy > span {
+          color: var(--color-text-primary);
+          font-weight: 700;
+        }
+
+        .file-upload-copy > small {
+          overflow: hidden;
+          color: var(--color-text-muted);
+          font-size: 11px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .file-upload-percent {
+          min-width: 52px;
+          padding: 5px 9px;
+          border-radius: var(--radius-full);
+          background: #fff;
+          color: var(--color-primary-dark);
+          font-size: 12px;
+          font-variant-numeric: tabular-nums;
+          text-align: center;
+          box-shadow: 0 6px 18px rgba(36, 28, 18, 0.08);
+        }
+
+        .file-progress-track {
+          position: relative;
+          height: 9px;
+          overflow: hidden;
+          border-radius: var(--radius-full);
+          background: rgba(19, 34, 53, 0.09);
+        }
+
+        .file-progress-track span {
+          position: absolute;
+          inset: 0 auto 0 0;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #d98c1b, #f4b24e);
+          box-shadow: 0 0 18px rgba(217, 140, 27, 0.36);
+          transition: width 180ms ease;
         }
 
         .file-upload-spinner {
@@ -348,7 +439,7 @@ export default function FileUpload({
         }
 
         .file-upload-cancel {
-          margin-left: auto;
+          align-self: flex-end;
           color: var(--color-error);
           font-size: 12px;
           font-weight: 600;

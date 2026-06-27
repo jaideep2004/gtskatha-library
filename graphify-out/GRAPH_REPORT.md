@@ -1,11 +1,11 @@
-# Graph Report - gts-katha  (2026-06-21)
+# Graph Report - gts-katha  (2026-06-27)
 
 ## Corpus Check
-- 154 files · ~477,703 words
+- 155 files · ~478,229 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 413 nodes · 518 edges · 17 communities detected
+- 414 nodes · 518 edges · 17 communities detected
 - Extraction: 64% EXTRACTED · 36% INFERRED · 0% AMBIGUOUS · INFERRED: 186 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -144,11 +144,11 @@ Nodes (2): loadEnv(), main()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `connectDB()` connect `Community 0` to `Community 1`, `Community 2`, `Community 4`, `Community 7`, `Community 9`?**
-  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
 - **Why does `generateSlug()` connect `Community 2` to `Community 10`, `Community 5`, `Community 7`?**
-  _High betweenness centrality (0.078) - this node is a cross-community bridge._
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
 - **Why does `requireAdmin()` connect `Community 2` to `Community 9`, `Community 3`, `Community 6`, `Community 1`?**
-  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **Are the 51 inferred relationships involving `connectDB()` (e.g. with `sitemap()` and `HomePage()`) actually correct?**
   _`connectDB()` has 51 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 17 inferred relationships involving `enforceRateLimit()` (e.g. with `PATCH()` and `DELETE()`) actually correct?**

@@ -86,15 +86,21 @@ export default async function AdminDashboardPage() {
         <div className="ad-panel">
           <div className="ad-panel-head"><h2>Recent Kathas</h2><Link href="/admin/kathas">View all</Link></div>
           <div className="ad-katha-list">
-            {recentKathas.map((katha) => (
-              <Link href={`/admin/kathas?edit=${katha.slug}`} key={String(katha._id)}>
-                <div>{katha.thumbnail ? <img src={getMediaUrl('thumbnails', katha.thumbnail)} alt="" /> : <span>☬</span>}</div>
-                <span><strong>{katha.title}</strong><small>{katha.type.toUpperCase()} · {formatDate(katha.createdAt)}</small></span>
-                <b className={katha.status === 'archived' ? 'archived' : katha.published ? 'published' : 'draft'}>
-                  {katha.status === 'archived' ? 'Archived' : katha.published ? 'Published' : 'Draft'}
-                </b>
-              </Link>
-            ))}
+            {recentKathas.map((katha) => {
+              const title = safeText(katha.title, 'Untitled katha');
+              const slug = safeText(katha.slug);
+              const type = safeText(katha.type, 'Katha').toUpperCase();
+              const statusClass = dashboardStatusClass(katha);
+              const statusLabel = dashboardStatusLabel(katha);
+
+              return (
+                <Link href={slug ? `/admin/kathas?edit=${slug}` : '/admin/kathas'} key={String(katha._id)}>
+                  <div>{katha.thumbnail ? <img src={getMediaUrl('thumbnails', katha.thumbnail)} alt="" /> : <span>☬</span>}</div>
+                  <span><strong>{title}</strong><small>{type} · {safeFormatDate(katha.createdAt)}</small></span>
+                  <b className={statusClass}>{statusLabel}</b>
+                </Link>
+              );
+            })}
             {!recentKathas.length && <div className="ad-empty">No kathas yet.</div>}
           </div>
         </div>
@@ -113,7 +119,18 @@ export default async function AdminDashboardPage() {
         </div>
         <div className="ad-panel">
           <div className="ad-panel-head"><h2>Recent Users</h2><span>{userCount} total</span></div>
-          {recentUsers.map((user) => <div className="ad-user-row" key={String(user._id)}><span>{user.name.charAt(0).toUpperCase()}</span><div><strong>{user.name}</strong><small>{user.email}</small></div><time>{formatDate(user.createdAt)}</time></div>)}
+          {recentUsers.map((user) => {
+            const email = safeText(user.email, 'No email');
+            const name = safeText(user.name, email !== 'No email' ? email.split('@')[0] : 'Unnamed user');
+
+            return (
+              <div className="ad-user-row" key={String(user._id)}>
+                <span>{userInitial(name, email)}</span>
+                <div><strong>{name}</strong><small>{email}</small></div>
+                <time>{safeFormatDate(user.createdAt)}</time>
+              </div>
+            );
+          })}
           {!recentUsers.length && <div className="ad-empty">No registered users.</div>}
         </div>
       </section>
@@ -133,4 +150,32 @@ export default async function AdminDashboardPage() {
       `}</style>
     </main>
   );
+}
+
+function safeText(value: unknown, fallback = '') {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function safeFormatDate(value: unknown) {
+  const date = value instanceof Date || typeof value === 'string' || typeof value === 'number'
+    ? new Date(value)
+    : null;
+
+  if (!date || Number.isNaN(date.getTime())) return 'Unknown date';
+  return formatDate(date);
+}
+
+function dashboardStatusClass(katha: { status?: unknown; published?: unknown }) {
+  if (katha.status === 'archived') return 'archived';
+  return katha.published === true ? 'published' : 'draft';
+}
+
+function dashboardStatusLabel(katha: { status?: unknown; published?: unknown }) {
+  if (katha.status === 'archived') return 'Archived';
+  return katha.published === true ? 'Published' : 'Draft';
+}
+
+function userInitial(name: string, email: string) {
+  const value = safeText(name) || safeText(email) || '?';
+  return value.charAt(0).toUpperCase();
 }

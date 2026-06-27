@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { generateSlug } from '@/lib/utils';
 import FileUpload from '@/components/admin/FileUpload';
+import AdminThumbnail from '@/components/admin/AdminThumbnail';
 import { toast } from 'sonner';
 
 interface Category {
@@ -169,13 +170,16 @@ export default function CategoriesAdminPage() {
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>Name</th><th>Slug</th><th>Audio</th><th>Video</th><th>Total</th><th>Description</th><th>Actions</th></tr>
+              <tr><th>Artwork</th><th>Name</th><th>Slug</th><th>Audio</th><th>Video</th><th>Total</th><th>Description</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {categories.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No categories yet.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No categories yet.</td></tr>
               ) : categories.map((cat) => (
                 <tr key={cat._id}>
+                  <td>
+                    <AdminThumbnail folder="thumbnails" value={cat.thumbnail} alt={`${cat.name} thumbnail`} />
+                  </td>
                   <td style={{ fontWeight: 500 }}>{cat.name}</td>
                   <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{cat.slug}</code></td>
                   <td><span className="count-pill count-audio">{cat.audioCount ?? 0}</span></td>

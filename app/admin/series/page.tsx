@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { generateSlug } from '@/lib/utils';
 import FileUpload from '@/components/admin/FileUpload';
+import AdminThumbnail from '@/components/admin/AdminThumbnail';
 import { toast } from 'sonner';
 
 interface Series {
@@ -177,14 +178,17 @@ export default function SeriesAdminPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Title</th><th>Slug</th><th>Sort</th><th>Featured</th><th>Actions</th>
+                <th>Artwork</th><th>Title</th><th>Slug</th><th>Sort</th><th>Featured</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {series.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No series yet.</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No series yet.</td></tr>
               ) : series.map((s) => (
                 <tr key={s._id}>
+                  <td>
+                    <AdminThumbnail folder="series" value={s.thumbnail} alt={`${s.title} thumbnail`} />
+                  </td>
                   <td style={{ fontWeight: 500 }}>{s.title}</td>
                   <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.slug}</code></td>
                   <td>{s.sortOrder}</td>

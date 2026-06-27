@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatDuration, formatDate, generateSlug } from '@/lib/utils';
 import FileUpload from '@/components/admin/FileUpload';
+import AdminThumbnail from '@/components/admin/AdminThumbnail';
 import { toast } from 'sonner';
 
 interface Katha {
@@ -605,6 +606,7 @@ export default function KathasAdminPage() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th>Artwork</th>
                 <th>Title</th>
                 <th>Type</th>
                 <th>Category</th>
@@ -618,12 +620,15 @@ export default function KathasAdminPage() {
             <tbody>
               {kathas.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
                     No kathas yet. Add your first one!
                   </td>
                 </tr>
               ) : kathas.map((k) => (
                 <tr key={k._id}>
+                  <td>
+                    <AdminThumbnail folder="thumbnails" value={k.thumbnail} alt={`${k.title} thumbnail`} />
+                  </td>
                   <td>
                     <div className="admin-table-title">{k.title}</div>
                     {k.featured && <span className="badge badge-primary" style={{ fontSize: 10 }}>Featured</span>}

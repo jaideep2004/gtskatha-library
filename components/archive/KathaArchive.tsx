@@ -44,10 +44,10 @@ export default function KathaArchive({
 	query,
 }: ArchiveProps) {
 	const audio = type === "audio";
-	const title = audio ? "Audio Kathas Archive" : "Video Kathas Archive";
+	const title = audio ? "ਆਡੀਓ ਕਥਾ ਭੰਡਾਰ" : "ਵੀਡੀਓ ਕਥਾ ਭੰਡਾਰ";
 	const description = audio
-		? "Listen to inspiring kathas by respected ragi jathas and katha vachaks."
-		: "Watch enlightening kathas and Gurbani discourses from respected speakers.";
+		? "ਸਤਿਕਾਰਯੋਗ ਰਾਗੀ ਜਥਿਆਂ ਅਤੇ ਕਥਾ ਵਾਚਕਾਂ ਦੀ ਪ੍ਰੇਰਕ ਕਥਾ ਸੁਣੋ।"
+		: "ਸਤਿਕਾਰਯੋਗ ਵਕਤਾਵਾਂ ਦੀ ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਅਤੇ ਆਤਮਕ ਕਥਾ ਵੇਖੋ।";
 	const accent = audio ? "#d88717" : "#7354cf";
 
 	return (
@@ -59,9 +59,9 @@ export default function KathaArchive({
 				<div className='archive-hero-shade' aria-hidden />
 				<div className='container archive-hero-content'>
 					<nav className='archive-breadcrumb'>
-						<Link href='/'>Home</Link>
+						<Link href='/'>ਮੁੱਖ ਪੰਨਾ</Link>
 						<span>›</span>
-						<b>{audio ? "Audio Kathas" : "Video Kathas"}</b>
+						<b>{audio ? "ਆਡੀਓ ਕਥਾ" : "ਵੀਡੀਓ ਕਥਾ"}</b>
 					</nav>
 					<h1>{title}</h1>
 					<p>{description}</p>
@@ -85,7 +85,7 @@ export default function KathaArchive({
 								name='q'
 								defaultValue={query.q}
 								minLength={MIN_SEARCH_QUERY_LENGTH}
-								placeholder={`Search ${type} kathas by title, speaker or series...`}
+								placeholder={`${audio ? "ਆਡੀਓ" : "ਵੀਡੀਓ"} ਕਥਾ, ਵਕਤਾ ਜਾਂ ਲੜੀ ਖੋਜੋ...`}
 							/>
 						</label>
 						<button type='submit'>
@@ -99,7 +99,7 @@ export default function KathaArchive({
 								aria-hidden>
 								<path d='M3 4h18l-7 8v6l-4 2v-8L3 4Z' />
 							</svg>
-							Filters
+							Filter
 						</button>
 					</form>
 				</div>
@@ -116,9 +116,9 @@ export default function KathaArchive({
 				<div className='archive-results'>
 					<header>
 						<p>
-							<strong>{total.toLocaleString()}</strong> results found
+							<strong>{total.toLocaleString()}</strong> ਨਤੀਜੇ ਮਿਲੇ
 						</p>
-						<span>Curated digital library</span>
+						<span>ਚੁਣੀ ਹੋਈ ਡਿਜੀਟਲ ਲਾਇਬ੍ਰੇਰੀ</span>
 					</header>
 					{kathas.length ? (
 						<div className='archive-grid'>
@@ -153,7 +153,7 @@ export default function KathaArchive({
 											<span>{formatDate(katha.createdAt)}</span>
 											<span>
 												{(katha.views ?? 0).toLocaleString()}{" "}
-												{audio ? "listens" : "views"}
+												{audio ? "ਸੁਣਨ" : "ਵੇਖਣ"}
 											</span>
 										</footer>
 									</Link>
@@ -164,10 +164,9 @@ export default function KathaArchive({
 					) : (
 						<div className='archive-empty'>
 							<span>☬</span>
-							<h2>No matching kathas</h2>
+							<h2>ਮਿਲਦੀ ਕਥਾ ਨਹੀਂ ਲੱਭੀ</h2>
 							<p>
-								Try broader filters or check again after new content is
-								published.
+								ਵੱਡੇ ਫਿਲਟਰਾਂ ਨਾਲ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਨਵੀਂ ਕਥਾ ਆਉਣ ਤੋਂ ਬਾਅਦ ਵੇਖੋ।
 							</p>
 						</div>
 					)}
@@ -182,7 +181,7 @@ export default function KathaArchive({
 								</Link>
 							)}
 							<span>
-								Page {page} of {totalPages}
+								ਪੰਨਾ {page} / {totalPages}
 							</span>
 							{page < totalPages && (
 								<Link
@@ -199,8 +198,8 @@ export default function KathaArchive({
 			<style>{`
         .archive-page{min-height:100vh;background:#fbfaf7;padding-bottom:70px}
         .archive-hero{position:relative;min-height:335px;overflow:hidden;border-bottom:1px solid #e8e2d8}
-        .archive-hero-image{position:absolute;inset:0;background:url('/images/gtshero3.png') 73% 42%/cover no-repeat}
-        .archive-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,#fbfaf7 0%,rgba(251,250,247,.98) 30%,rgba(251,250,247,.74) 49%,rgba(251,250,247,.04) 76%)}
+        .archive-hero-image{position:absolute;inset:0;background:url('/images/archivebg.png') 73% 42%/cover no-repeat}
+        .archive-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg, #fbfaf7 0%, rgba(251, 250, 247, .98) 30%, rgb(251 250 247 / 25%) 49%, rgba(251, 250, 247, .04) 76%)}
         .archive-hero-content{position:relative;z-index:1;padding-top:38px}
         .archive-breadcrumb{display:flex;gap:10px;align-items:center;font-size:14px;color:#667085;margin-bottom:18px}.archive-breadcrumb b{color:#27364d}
         .archive-hero h1{font-size:52px;max-width:680px;color:#142039;margin-bottom:10px}.archive-hero p{font-size:17px;line-height:1.7;max-width:600px;color:#40506a}
@@ -227,7 +226,7 @@ export default function KathaArchive({
         .archive-empty{min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:1px dashed #ddd7cc;border-radius:7px}.archive-empty>span{font-size:44px;color:#d99525}.archive-empty h2{font-size:25px;margin:12px}.archive-empty p{font-size:14px}
         .archive-pagination{display:flex;align-items:center;justify-content:center;gap:13px;margin-top:26px}.archive-pagination a{width:38px;height:38px;display:grid;place-items:center;border:1px solid #dfe2e7;border-radius:6px;font-size:22px}.archive-pagination span{font-size:13px;color:#657085}
         @media(max-width:1150px){.archive-grid{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:820px){.archive-hero{min-height:310px}.archive-hero-shade{background:linear-gradient(90deg,rgba(251,250,247,.98),rgba(251,250,247,.78))}.archive-layout{grid-template-columns:1fr;margin-top:16px}.archive-filters{order:0}.archive-filters form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.archive-filters fieldset{grid-column:1/-1}.archive-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:820px){.archive-hero{min-height:310px}.archive-hero-shade{background:linear-gradient(90deg, #fbfaf7 0%, rgba(251, 250, 247, .98) 30%, rgb(251 250 247 / 25%) 49%, rgba(251, 250, 247, .04) 76%)}.archive-layout{grid-template-columns:1fr;margin-top:16px}.archive-filters{order:0}.archive-filters form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.archive-filters fieldset{grid-column:1/-1}.archive-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:560px){.archive-hero{min-height:370px}.archive-hero-content{padding-top:28px}.archive-hero h1{font-size:37px}.archive-hero p{font-size:15px}.archive-search{grid-template-columns:1fr}.archive-search button{height:46px}.archive-filters form{grid-template-columns:1fr}.archive-grid{grid-template-columns:1fr;gap:12px}.archive-results{padding:12px}.archive-card-copy h2{font-size:16px;min-height:auto}.archive-play{width:40px;height:40px}}
       `}</style>
 		</main>

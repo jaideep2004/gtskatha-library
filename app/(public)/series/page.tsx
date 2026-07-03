@@ -3,10 +3,11 @@ import SeriesArchive from '@/components/archive/SeriesArchive';
 import { getAllSeries, getSeriesEpisodeCounts } from '@/services/seriesService';
 import { isSearchQueryReady } from '@/lib/search';
 import type { ISeries } from '@/types';
+import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'Series Archive',
-  description: 'Browse curated series of Sikh kathas and Gurbani discourses.',
+  title: 'ਕਥਾ ਲੜੀਆਂ',
+  description: 'ਸਿੱਖ ਕਥਾ ਅਤੇ ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਦੀਆਂ ਚੁਣੀਆਂ ਹੋਈਆਂ ਲੜੀਆਂ ਵੇਖੋ।',
 };
 
 interface Props {
@@ -19,7 +20,7 @@ export default async function SeriesPage({ searchParams }: Props) {
     getAllSeries(false),
     getSeriesEpisodeCounts(),
   ]);
-  let series = rawSeries as unknown as ISeries[];
+  let series = serializeForClient(rawSeries) as unknown as ISeries[];
   const q = params.q?.trim().toLocaleLowerCase();
   if (q && !isSearchQueryReady(q)) {
     series = [];

@@ -18,7 +18,7 @@ export default function PopularSeries({ series, isLoading }: PopularSeriesProps)
       <section className="page-section-sm">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Popular Series</h2>
+            <h2 className="section-title">ਪ੍ਰਸਿੱਧ ਲੜੀਆਂ</h2>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-5)', overflow: 'hidden' }}>
             {[0,1,2,3].map((i) => (
@@ -34,9 +34,9 @@ export default function PopularSeries({ series, isLoading }: PopularSeriesProps)
     <section className="page-section-sm">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Popular Series</h2>
+          <h2 className="section-title">ਪ੍ਰਸਿੱਧ ਲੜੀਆਂ</h2>
           <Link href="/series" className="section-link">
-            View All
+            ਸਭ ਵੇਖੋ
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -45,7 +45,7 @@ export default function PopularSeries({ series, isLoading }: PopularSeriesProps)
 
         {displaySeries.length === 0 ? (
           <div className="ps-empty">
-            <p>No series available yet — check back soon.</p>
+            <p>ਹਾਲੇ ਕੋਈ ਲੜੀ ਉਪਲਬਧ ਨਹੀਂ। ਜਲਦੀ ਮੁੜ ਵੇਖੋ।</p>
           </div>
         ) : (
           <div className="ps-scroll scroll-x">

@@ -4,10 +4,11 @@ import { getKathas } from '@/services/kathaService';
 import { getCategories } from '@/services/categoryService';
 import { getAllSeries } from '@/services/seriesService';
 import type { ICategory, IKatha, ISeries } from '@/types';
+import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'Video Kathas Archive',
-  description: 'Watch Sikh video kathas, spiritual discourses, and Gurbani vichar.',
+  title: 'ਵੀਡੀਓ ਕਥਾ ਭੰਡਾਰ',
+  description: 'ਸਿੱਖ ਵੀਡੀਓ ਕਥਾ, ਆਤਮਕ ਵਿਚਾਰ, ਅਤੇ ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਵੇਖੋ।',
 };
 
 interface Props {
@@ -27,9 +28,9 @@ export default async function VideoPage({ searchParams }: Props) {
   return (
     <KathaArchive
       type="video"
-      kathas={result.data as unknown as IKatha[]}
-      categories={categories as unknown as ICategory[]}
-      series={series as unknown as ISeries[]}
+      kathas={serializeForClient(result.data) as unknown as IKatha[]}
+      categories={serializeForClient(categories) as unknown as ICategory[]}
+      series={serializeForClient(series) as unknown as ISeries[]}
       total={result.total}
       page={result.page}
       totalPages={result.totalPages}

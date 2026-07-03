@@ -30,9 +30,9 @@ export default function ContinueListening({
 					{item && katha && (
 						<div className='cl-card'>
 							<div className='cl-header'>
-								<span className='cl-header-title'>Continue Your Journey</span>
+								<span className='cl-header-title'>ਆਪਣੀ ਯਾਤਰਾ ਜਾਰੀ ਰੱਖੋ</span>
 								<Link href='/profile/favorites' className='cl-view-all'>
-									View all
+									ਸਭ ਵੇਖੋ
 								</Link>
 							</div>
 
@@ -84,7 +84,7 @@ export default function ContinueListening({
 										fill='currentColor'>
 										<polygon points='5 3 19 12 5 21 5 3' />
 									</svg>
-									Resume Listening
+									ਮੁੜ ਸੁਣੋ
 								</Link>
 							</div>
 						</div>
@@ -92,12 +92,12 @@ export default function ContinueListening({
 					{!item && (
 						<Link href='/audio' className='cl-card cl-empty-card'>
 							<div>
-								<span className='cl-empty-kicker'>Continue Your Journey</span>
-								<h2>Choose a katha to begin.</h2>
-								<p>Your listening progress will stay ready across visits.</p>
+								<span className='cl-empty-kicker'>ਆਪਣੀ ਯਾਤਰਾ ਜਾਰੀ ਰੱਖੋ</span>
+								<h2>ਸ਼ੁਰੂ ਕਰਨ ਲਈ ਕੋਈ ਕਥਾ ਚੁਣੋ।</h2>
+								<p>ਤੁਹਾਡੀ ਸੁਣਨ ਦੀ ਪ੍ਰਗਤੀ ਅਗਲੀ ਵਾਰ ਲਈ ਸੰਭਾਲੀ ਰਹੇਗੀ।</p>
 							</div>
 							<span className='cl-empty-action'>
-								Explore Audio <b>→</b>
+								ਆਡੀਓ ਵੇਖੋ <b>→</b>
 							</span>
 						</Link>
 					)}
@@ -107,7 +107,7 @@ export default function ContinueListening({
 						<div className='dw-card'>
 							<div className='dw-header'>
 								<span className='dw-quote-mark'>❝</span>
-								<span className='dw-title'>Daily Wisdom</span>
+								<span className='dw-title'>ਅੱਜ ਦੀ ਸਿੱਖਿਆ</span>
 							</div>
 
 							<blockquote className='dw-gurmukhi text-gurmukhi'>
@@ -122,9 +122,9 @@ export default function ContinueListening({
 						<div className='dw-card dw-empty'>
 							<div className='dw-header'>
 								<span className='dw-quote-mark'>❝</span>
-								<span className='dw-title'>Daily Wisdom</span>
+								<span className='dw-title'>ਅੱਜ ਦੀ ਸਿੱਖਿਆ</span>
 							</div>
-							<p>Wisdom for today will appear soon.</p>
+							<p>ਅੱਜ ਦੀ ਸਿੱਖਿਆ ਜਲਦੀ ਇੱਥੇ ਆਵੇਗੀ।</p>
 							<div className='dw-temple-bg' aria-hidden />
 						</div>
 					)}

@@ -61,7 +61,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 			limit: 6,
 			sort: "newest",
 		});
-		relatedVideos = (result.data as unknown as IKatha[])
+		relatedVideos = (serializeForClient(result.data) as unknown as IKatha[])
 			.filter((v) => v.slug !== slug)
 			.slice(0, 4);
 	} catch {
@@ -79,9 +79,9 @@ export default async function VideoDetailPage({ params }: PageProps) {
 		<div className='page-section'>
 			<div className='container'>
 				<nav className='breadcrumb' aria-label='Breadcrumb'>
-					<Link href='/'>Home</Link>
+					<Link href='/'>ਮੁੱਖ ਪੰਨਾ</Link>
 					<span className='breadcrumb-sep'>›</span>
-					<Link href='/video'>Video</Link>
+					<Link href='/video'>ਵੀਡੀਓ</Link>
 					{series && (
 						<>
 							<span className='breadcrumb-sep'>›</span>
@@ -101,14 +101,14 @@ export default async function VideoDetailPage({ params }: PageProps) {
 					/>
 					<aside className='video-chapters-panel'>
 						<div className='video-chapters-head'>
-							<h2>Chapters</h2>
-							<span>{katha.chapters?.length ?? 0} parts</span>
+							<h2>ਅਧਿਆਇ</h2>
+							<span>{katha.chapters?.length ?? 0} ਭਾਗ</span>
 						</div>
 						{(katha.chapters?.length ?? 0) > 0 ? (
 							<ChaptersList chapters={katha.chapters ?? []} mediaType='video' />
 						) : (
 							<div className='video-chapters-empty'>
-								Chapters will appear here when added.
+								ਅਧਿਆਇ ਜੋੜੇ ਜਾਣ ਤੋਂ ਬਾਅਦ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।
 							</div>
 						)}
 					</aside>
@@ -142,7 +142,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 											<path d='M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z' />
 										</svg>
 									</div>
-									<div className='video-author-label'>Official Channel</div>
+									<div className='video-author-label'>ਅਧਿਕਾਰਤ ਚੈਨਲ</div>
 								</div>
 							</div>
 
@@ -181,7 +181,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 						{relatedVideos.length > 0 && (
 							<div className='sidebar-card'>
 								<h3 className='sidebar-card-title'>
-									{series ? "More in This Series" : "Continue Learning"}
+									{series ? "ਇਸ ਲੜੀ ਵਿੱਚ ਹੋਰ" : "ਸਿੱਖਿਆ ਜਾਰੀ ਰੱਖੋ"}
 								</h3>
 								<ul className='related-list'>
 									{relatedVideos.map((r) => (
@@ -231,7 +231,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 											width: "100%",
 											justifyContent: "center",
 										}}>
-										View All Episodes
+										ਸਾਰੇ ਅਧਿਆਇ ਵੇਖੋ
 									</Link>
 								)}
 							</div>
@@ -240,7 +240,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 						{/* About Series */}
 						{series && (
 							<div className='sidebar-card'>
-								<h3 className='sidebar-card-title'>About the Series</h3>
+								<h3 className='sidebar-card-title'>ਲੜੀ ਬਾਰੇ</h3>
 								<div className='series-sidebar-thumb'>
 									{series.thumbnail ? (
 										<img
@@ -268,19 +268,19 @@ export default async function VideoDetailPage({ params }: PageProps) {
 									href={`/series/${series.slug}`}
 									className='btn btn-outline btn-sm'
 									style={{ marginTop: "var(--space-4)" }}>
-									View Series
+									ਲੜੀ ਵੇਖੋ
 								</Link>
 							</div>
 						)}
 
 						{/* Share */}
 						<div className='sidebar-card'>
-							<h3 className='sidebar-card-title'>Share this Katha</h3>
+							<h3 className='sidebar-card-title'>ਇਹ ਕਥਾ ਸਾਂਝੀ ਕਰੋ</h3>
 							<ShareButtons title={katha.title} />
 						</div>
 						{katha.tags?.length > 0 && (
 							<div className='sidebar-card'>
-								<h3 className='sidebar-card-title'>Tags</h3>
+								<h3 className='sidebar-card-title'>ਟੈਗ</h3>
 								<div className='video-tags sidebar-tags'>
 									{katha.tags.map((tag) => (
 										<Link

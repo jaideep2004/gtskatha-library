@@ -16,8 +16,8 @@ import { authOptions } from '@/lib/auth';
 import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'Sikh Katha Digital Library — Home',
-  description: 'Discover Sikh kathas, gurbani vichar, and spiritual discourses by Bhai Sahib Ji.',
+  title: 'ਸਿੱਖ ਕਥਾ ਡਿਜੀਟਲ ਲਾਇਬ੍ਰੇਰੀ',
+  description: 'ਭਾਈ ਸਾਹਿਬ ਜੀ ਦੀ ਸਿੱਖ ਕਥਾ, ਗੁਰਬਾਣੀ ਵਿਚਾਰ, ਅਤੇ ਆਤਮਕ ਸਿੱਖਿਆ ਖੋਜੋ।',
 };
 
 export const dynamic = 'force-dynamic';
@@ -96,10 +96,10 @@ export default async function HomePage() {
   return (
     <div className="page-fade-in">
       <HeroSection heroKatha={heroKatha ? serializeForClient(heroKatha) : undefined} />
-      <ContinueListening item={continueItem} dailyQuote={dailyQuote} />
+      <ContinueListening item={continueItem ? serializeForClient(continueItem) : undefined} dailyQuote={dailyQuote} />
       <PopularSeries series={series.length ? serializeForClient(series) : undefined} />
-      <RecentlyAdded kathas={recentKathas.length ? recentKathas : undefined} />
-      <AudioThemes categories={categories} />
+      <RecentlyAdded kathas={recentKathas.length ? serializeForClient(recentKathas) : undefined} />
+      <AudioThemes categories={categories.length ? serializeForClient(categories) : undefined} />
     </div>
   );
 }

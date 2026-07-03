@@ -1,18 +1,18 @@
 import Link from 'next/link';
 
 const exploreLinks = [
-  ['/audio', 'Audio Kathas'],
-  ['/video', 'Video Kathas'],
-  ['/series', 'Series'],
-  ['/topics', 'Topics'],
-  ['/search', 'Search Library'],
+  ['/audio', 'ਆਡੀਓ ਕਥਾ'],
+  ['/video', 'ਵੀਡੀਓ ਕਥਾ'],
+  ['/series', 'ਲੜੀਆਂ'],
+  ['/topics', 'ਵਿਸ਼ੇ'],
+  ['/search', 'ਲਾਇਬ੍ਰੇਰੀ ਖੋਜੋ'],
 ];
 
 const accountLinks = [
-  ['/dashboard', 'My Dashboard'],
-  ['/profile/favorites', 'Saved Kathas'],
-  ['/login', 'Sign In'],
-  ['/register', 'Create Account'],
+  ['/dashboard', 'ਮੇਰਾ ਡੈਸ਼ਬੋਰਡ'],
+  ['/profile/favorites', 'ਸੰਭਾਲੀ ਕਥਾ'],
+  ['/login', 'ਸਾਈਨ ਇਨ'],
+  ['/register', 'ਖਾਤਾ ਬਣਾਓ'],
 ];
 
 export default function Footer() {
@@ -26,24 +26,24 @@ export default function Footer() {
               <span aria-hidden>☬</span>
               <div><strong>SIKH KATHA</strong><small>DIGITAL LIBRARY</small></div>
             </Link>
-            <p>Preserving Sikh wisdom through a focused library of audio and video kathas.</p>
-            <div className="footer-principle"><span aria-hidden>ੴ</span><p>Listen. Reflect. Carry wisdom forward.</p></div>
+            <p>ਆਡੀਓ ਅਤੇ ਵੀਡੀਓ ਕਥਾ ਦੀ ਕੇਂਦਰਿਤ ਲਾਇਬ੍ਰੇਰੀ ਰਾਹੀਂ ਸਿੱਖ ਸਿੱਖਿਆ ਨੂੰ ਸੰਭਾਲਣਾ।</p>
+            <div className="footer-principle"><span aria-hidden>ੴ</span><p>ਸੁਣੋ। ਵਿਚਾਰੋ। ਸਿੱਖਿਆ ਨੂੰ ਅੱਗੇ ਲੈ ਕੇ ਚਲੋ।</p></div>
           </section>
 
           <nav className="footer-group" aria-label="Explore">
-            <h2>Explore</h2>
+            <h2>ਖੋਜੋ</h2>
             {exploreLinks.map(([href, label]) => <Link href={href} key={href}>{label}</Link>)}
           </nav>
 
           <nav className="footer-group" aria-label="Account">
-            <h2>Account</h2>
+            <h2>ਖਾਤਾ</h2>
             {accountLinks.map(([href, label]) => <Link href={href} key={href}>{label}</Link>)}
           </nav>
 
           <section className="footer-invite">
-            <p>YOUR QUIET PLACE FOR KATHA</p>
-            <h2>Return to wisdom, anytime.</h2>
-            <Link href="/audio">Start listening <span>›</span></Link>
+            <p>ਕਥਾ ਲਈ ਤੁਹਾਡੀ ਸ਼ਾਂਤ ਥਾਂ</p>
+            <h2>ਜਦੋਂ ਚਾਹੋ, ਸਿੱਖਿਆ ਵੱਲ ਮੁੜੋ।</h2>
+            <Link href="/audio">ਸੁਣਨਾ ਸ਼ੁਰੂ ਕਰੋ <span>›</span></Link>
           </section>
         </div>
 

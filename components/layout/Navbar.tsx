@@ -124,7 +124,7 @@ export default function Navbar() {
         <div className={`navbar-mobile-search ${mobileSearchOpen ? 'open' : ''}`}>
           <div className="container">
             <NavbarSearch mobile autoFocus={mobileSearchOpen} onNavigate={() => setMobileSearchOpen(false)} />
-            <p>Enter at least 2 characters — for example, “ki” finds “Kirtan”.</p>
+            <p>ਘੱਟੋ-ਘੱਟ 2 ਅੱਖਰ ਲਿਖੋ। ਉਦਾਹਰਨ ਵਜੋਂ, “ki” ਨਾਲ “Kirtan” ਲੱਭ ਸਕਦਾ ਹੈ।</p>
           </div>
         </div>
       </nav>
@@ -143,7 +143,7 @@ export default function Navbar() {
         .navbar-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:24px}
         .navbar-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}.navbar-logo-icon{font-size:28px;color:var(--color-primary);line-height:1}
         .navbar-logo-text{display:flex;flex-direction:column;line-height:1.1}.navbar-logo-title{font-family:var(--font-heading);font-size:15px;font-weight:700;letter-spacing:.5px}.navbar-logo-sub{font-size:8.5px;font-weight:600;color:var(--color-primary);letter-spacing:2px}
-        .navbar-links{display:flex;align-items:center;justify-content:center;gap:2px;flex:1}.navbar-link{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-full);color:var(--color-text-secondary);font-size:13.5px;font-weight:500;white-space:nowrap;transition:color var(--transition-fast),background var(--transition-fast)}
+        .navbar-links{display:flex;align-items:center;justify-content:center;gap:2px;flex:1}.navbar-link{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-full);color:black;font-size:13.5px;font-weight:500;white-space:nowrap;transition:color var(--transition-fast),background var(--transition-fast)}
         .navbar-link:hover{color:var(--color-text-primary);background:var(--color-bg-secondary)}.navbar-link.active{color:var(--color-primary);font-weight:600;background:var(--color-primary-alpha)}
         .navbar-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}.navbar-search-desktop{display:block}
         .navbar-search-form{height:38px;min-width:200px;display:flex;align-items:center;gap:8px;padding:0 16px;background:#fff;border:1.5px solid var(--color-border);border-radius:var(--radius-full)}

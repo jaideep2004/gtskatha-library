@@ -36,7 +36,7 @@ export default function KathaActions({ katha, isAuthenticated }: KathaActionsPro
 
   async function handleFavorite() {
     if (!isAuthenticated) {
-      toast.info('Sign in to save Kathas.');
+      toast.info('ਕਥਾ ਸੰਭਾਲਣ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ।');
       router.push(`/login?callbackUrl=/${katha.type}/${katha.slug}`);
       return;
     }
@@ -50,13 +50,13 @@ export default function KathaActions({ katha, isAuthenticated }: KathaActionsPro
       });
       if (response.ok) {
         setIsFavorite((current) => !current);
-        toast.success(isFavorite ? 'Removed from your library.' : 'Added to your library.');
+        toast.success(isFavorite ? 'ਤੁਹਾਡੀ ਲਾਇਬ੍ਰੇਰੀ ਤੋਂ ਹਟਾਇਆ ਗਿਆ।' : 'ਤੁਹਾਡੀ ਲਾਇਬ੍ਰੇਰੀ ਵਿੱਚ ਜੋੜਿਆ ਗਿਆ।');
       } else {
         const payload = await response.json().catch(() => null);
-        toast.error(payload?.error || 'Library update failed.');
+        toast.error(payload?.error || 'ਲਾਇਬ੍ਰੇਰੀ ਅੱਪਡੇਟ ਨਹੀਂ ਹੋ ਸਕੀ।');
       }
     } catch {
-      toast.error('Library update failed.');
+      toast.error('ਲਾਇਬ੍ਰੇਰੀ ਅੱਪਡੇਟ ਨਹੀਂ ਹੋ ਸਕੀ।');
     } finally {
       setSaving(false);
     }
@@ -77,7 +77,7 @@ export default function KathaActions({ katha, isAuthenticated }: KathaActionsPro
         <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
           <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
         </svg>
-        {saving ? 'Saving...' : isFavorite ? 'In Library' : 'Add to Library'}
+        {saving ? 'ਸੰਭਾਲਿਆ ਜਾ ਰਿਹਾ ਹੈ...' : isFavorite ? 'ਲਾਇਬ੍ਰੇਰੀ ਵਿੱਚ' : 'ਲਾਇਬ੍ਰੇਰੀ ਵਿੱਚ ਜੋੜੋ'}
       </button>
 
       {katha.allowDownload && mediaUrl && (
@@ -87,7 +87,7 @@ export default function KathaActions({ katha, isAuthenticated }: KathaActionsPro
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          Download
+          ਡਾਊਨਲੋਡ
         </a>
       )}
 

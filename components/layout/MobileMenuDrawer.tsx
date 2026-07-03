@@ -49,7 +49,7 @@ export default function MobileMenuDrawer({
 
   if (!mounted) return null;
 
-  const name = session?.user?.name?.trim() || 'Guest listener';
+  const name = session?.user?.name?.trim() || 'Guest';
   const initial = name.charAt(0).toUpperCase();
   const dashboardHref = session?.user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
 
@@ -91,17 +91,17 @@ export default function MobileMenuDrawer({
         <footer>
           <div className="mobile-drawer-account">
             <span>{initial}</span>
-            <div><b>{name}</b><small>{session?.user?.email || 'Sign in to save your journey'}</small></div>
+            <div><b>{name}</b><small>{session?.user?.email || 'ਆਪਣੀ ਯਾਤਰਾ ਸੰਭਾਲਣ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ'}</small></div>
           </div>
           {session?.user?.id ? (
             <div className="mobile-drawer-actions">
-              <Link href={dashboardHref} onClick={onClose}>Dashboard</Link>
-              <Link href="/profile/favorites" onClick={onClose}>My Library</Link>
-              <button type="button" onClick={onLogout}>Sign out</button>
+              <Link href={dashboardHref} onClick={onClose}>ਡੈਸ਼ਬੋਰਡ</Link>
+              <Link href="/profile/favorites" onClick={onClose}>ਮੇਰੀ ਲਾਇਬ੍ਰੇਰੀ</Link>
+              <button type="button" onClick={onLogout}>ਸਾਈਨ ਆਉਟ</button>
             </div>
           ) : (
             <Link className="mobile-drawer-signin" href="/login?callbackUrl=/dashboard" onClick={onClose}>
-              Sign in to your library
+              ਆਪਣੀ ਲਾਇਬ੍ਰੇਰੀ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ
             </Link>
           )}
         </footer>

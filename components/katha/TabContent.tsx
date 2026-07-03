@@ -15,10 +15,10 @@ interface TabContentProps {
 }
 
 const TABS: Array<{ id: TabId; label: string }> = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'takeaways', label: 'Key Takeaways' },
-  { id: 'notes', label: 'Notes' },
-  { id: 'references', label: 'References' },
+  { id: 'overview', label: 'ਸਾਰ' },
+  { id: 'takeaways', label: 'ਮੁੱਖ ਸਿੱਖਿਆ' },
+  { id: 'notes', label: 'ਨੋਟ' },
+  { id: 'references', label: 'ਹਵਾਲੇ' },
 ];
 
 export default function TabContent({
@@ -58,11 +58,11 @@ export default function TabContent({
           body: JSON.stringify({ kathaId: katha._id, content: value }),
         });
         setNoteStatus(response.ok ? 'saved' : 'error');
-        if (response.ok) toast.success('Private note saved.', { id: `note-${katha._id}` });
-        else toast.error('Could not save your note.', { id: `note-${katha._id}` });
+        if (response.ok) toast.success('ਨਿੱਜੀ ਨੋਟ ਸੰਭਾਲਿਆ ਗਿਆ।', { id: `note-${katha._id}` });
+        else toast.error('ਤੁਹਾਡਾ ਨੋਟ ਸੰਭਾਲਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ।', { id: `note-${katha._id}` });
       } catch {
         setNoteStatus('error');
-        toast.error('Could not save your note.', { id: `note-${katha._id}` });
+        toast.error('ਤੁਹਾਡਾ ਨੋਟ ਸੰਭਾਲਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ।', { id: `note-${katha._id}` });
       }
     }, 700);
   }
@@ -95,15 +95,15 @@ export default function TabContent({
           aria-labelledby="tab-overview"
           className={`tab-panel${activeTab === 'overview' ? ' tab-panel--active' : ''}`}
         >
-          <h3>About This Katha</h3>
+          <h3>ਇਸ ਕਥਾ ਬਾਰੇ</h3>
           {katha.description ? (
             <p>{katha.description}</p>
           ) : (
-            <p className="tab-empty">No description available.</p>
+            <p className="tab-empty">ਕੋਈ ਵੇਰਵਾ ਉਪਲਬਧ ਨਹੀਂ।</p>
           )}
           {categorySlug && categoryName && (
             <p style={{ marginTop: 'var(--space-3)' }}>
-              Category:{' '}
+              ਵਰਗ:{' '}
               <Link
                 href={`/search?category=${categorySlug}`}
                 style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
@@ -121,7 +121,7 @@ export default function TabContent({
           aria-labelledby="tab-takeaways"
           className={`tab-panel${activeTab === 'takeaways' ? ' tab-panel--active' : ''}`}
         >
-          <h3>Key Takeaways</h3>
+          <h3>ਮੁੱਖ ਸਿੱਖਿਆ</h3>
           {katha.keyTakeaways && katha.keyTakeaways.length > 0 ? (
             <ul className="takeaways-list">
               {katha.keyTakeaways.map((item, i) => (
@@ -132,7 +132,7 @@ export default function TabContent({
               ))}
             </ul>
           ) : (
-            <p className="tab-empty">No key takeaways available.</p>
+            <p className="tab-empty">ਹਾਲੇ ਮੁੱਖ ਸਿੱਖਿਆ ਉਪਲਬਧ ਨਹੀਂ।</p>
           )}
         </div>
 
@@ -143,12 +143,12 @@ export default function TabContent({
           aria-labelledby="tab-notes"
           className={`tab-panel${activeTab === 'notes' ? ' tab-panel--active' : ''}`}
         >
-          <h3>Notes</h3>
+          <h3>ਨੋਟ</h3>
           {isAuthenticated ? (
             <div className="notes-area">
               <textarea
                 className="input notes-textarea"
-                placeholder="Add your personal notes here... Your notes are private and only visible to you."
+                placeholder="ਆਪਣੇ ਨਿੱਜੀ ਨੋਟ ਇੱਥੇ ਲਿਖੋ। ਇਹ ਸਿਰਫ਼ ਤੁਹਾਨੂੰ ਹੀ ਦਿਖਾਈ ਦੇਣਗੇ।"
                 rows={6}
                 aria-label="Personal notes"
                 value={note}
@@ -156,21 +156,21 @@ export default function TabContent({
               />
               <p className="notes-hint">
                 {noteStatus === 'saving'
-                  ? 'Saving...'
+                  ? 'ਸੰਭਾਲਿਆ ਜਾ ਰਿਹਾ ਹੈ...'
                   : noteStatus === 'saved'
-                    ? 'Saved privately.'
+                    ? 'ਨਿੱਜੀ ਤੌਰ ਤੇ ਸੰਭਾਲਿਆ ਗਿਆ।'
                     : noteStatus === 'error'
-                      ? 'Could not save. Keep this page open and try again.'
-                      : 'Your notes are private and only visible to you.'}
+                      ? 'ਸੰਭਾਲਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਇਹ ਪੰਨਾ ਖੁੱਲ੍ਹਾ ਰੱਖੋ ਅਤੇ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।'
+                      : 'ਤੁਹਾਡੇ ਨੋਟ ਨਿੱਜੀ ਹਨ ਅਤੇ ਸਿਰਫ਼ ਤੁਹਾਨੂੰ ਹੀ ਦਿਖਾਈ ਦੇਣਗੇ।'}
               </p>
             </div>
           ) : (
             <div className="notes-login-prompt">
               <p>
                 <Link href="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                  Sign in
+                  ਸਾਈਨ ਇਨ ਕਰੋ
                 </Link>{' '}
-                to save personal notes for this katha.
+                ਇਸ ਕਥਾ ਲਈ ਨਿੱਜੀ ਨੋਟ ਸੰਭਾਲਣ ਲਈ।
               </p>
             </div>
           )}
@@ -183,7 +183,7 @@ export default function TabContent({
           aria-labelledby="tab-references"
           className={`tab-panel${activeTab === 'references' ? ' tab-panel--active' : ''}`}
         >
-          <h3>References</h3>
+          <h3>ਹਵਾਲੇ</h3>
           {katha.references && katha.references.length > 0 ? (
             <ul className="references-list">
               {katha.references.map((ref, i) => (
@@ -193,7 +193,7 @@ export default function TabContent({
               ))}
             </ul>
           ) : (
-            <p className="tab-empty">No references available.</p>
+            <p className="tab-empty">ਹਾਲੇ ਹਵਾਲੇ ਉਪਲਬਧ ਨਹੀਂ।</p>
           )}
         </div>
       </div>

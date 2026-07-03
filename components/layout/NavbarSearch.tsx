@@ -87,7 +87,7 @@ export default function NavbarSearch({
         </svg>
         <input
           type="search"
-          placeholder="Search kathas..."
+          placeholder="ਕਥਾ ਖੋਜੋ..."
           value={query}
           onChange={(event) => {
             const value = event.target.value;
@@ -100,7 +100,7 @@ export default function NavbarSearch({
           }}
           onFocus={() => isSearchQueryReady(query) && setOpen(true)}
           className="navbar-search-input"
-          aria-label="Search kathas"
+          aria-label="ਕਥਾ ਖੋਜੋ"
           aria-controls="navbar-search-results"
           minLength={MIN_SEARCH_QUERY_LENGTH}
           autoComplete="off"
@@ -111,8 +111,8 @@ export default function NavbarSearch({
       {open && (
         <div className="nav-search-results" id="navbar-search-results">
           <div className="nav-search-heading">
-            <span>{loading ? 'Searching…' : 'Search results'}</span>
-            {!loading && results.length > 0 && <small>{results.length} shown</small>}
+            <span>{loading ? 'ਖੋਜ ਜਾਰੀ ਹੈ...' : 'ਖੋਜ ਨਤੀਜੇ'}</span>
+            {!loading && results.length > 0 && <small>{results.length} ਵੇਖਾਏ</small>}
           </div>
           {!loading && results.map((item) => (
             <Link
@@ -137,10 +137,10 @@ export default function NavbarSearch({
             </Link>
           ))}
           {!loading && !results.length && (
-            <p className="nav-search-empty">No matching kathas found.</p>
+            <p className="nav-search-empty">ਮਿਲਦੀ ਕਥਾ ਨਹੀਂ ਲੱਭੀ।</p>
           )}
           <button type="button" className="nav-search-all" onClick={navigateToSearch}>
-            View all results
+            ਸਾਰੇ ਨਤੀਜੇ ਵੇਖੋ
           </button>
         </div>
       )}

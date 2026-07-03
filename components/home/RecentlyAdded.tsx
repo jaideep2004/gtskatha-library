@@ -17,7 +17,7 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
       <section className="page-section-sm">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Recently Added</h2>
+            <h2 className="section-title">ਨਵੀਂ ਜੋੜੀ ਗਈ ਕਥਾ</h2>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-4)', overflow: 'hidden' }}>
             {[0,1,2,3,4].map((i) => (
@@ -33,9 +33,9 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
     <section className="page-section-sm">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Recently Added</h2>
+          <h2 className="section-title">ਨਵੀਂ ਜੋੜੀ ਗਈ ਕਥਾ</h2>
           <Link href="/search?sort=newest" className="section-link">
-            View All
+            ਸਭ ਵੇਖੋ
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -44,7 +44,7 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
 
         {displayKathas.length === 0 ? (
           <div className="ra-empty">
-            <p>Nothing added recently — check back soon.</p>
+            <p>ਹਾਲੇ ਨਵੀਂ ਕਥਾ ਨਹੀਂ ਜੋੜੀ ਗਈ। ਜਲਦੀ ਮੁੜ ਵੇਖੋ।</p>
           </div>
         ) : (
           <div className="ra-scroll scroll-x">
@@ -97,7 +97,7 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
 
                   <div className="ra-info">
                     <div className="ra-eyebrow">
-                      <span>New release</span>
+                      <span>ਨਵੀਂ ਕਥਾ</span>
                       <span className="ra-eyebrow-line" aria-hidden />
                     </div>
                     <h3 className="ra-title">{katha.title}</h3>

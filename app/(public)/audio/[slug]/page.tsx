@@ -54,7 +54,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
       limit: 4,
       sort: 'newest',
     });
-    relatedKathas = (relatedResult.data as unknown as IKatha[])
+    relatedKathas = (serializeForClient(relatedResult.data) as unknown as IKatha[])
       .filter((k) => k.slug !== slug)
       .slice(0, 3);
   } catch { /* ignore */ }
@@ -67,9 +67,9 @@ export default async function AudioDetailPage({ params }: PageProps) {
       <div className="container">
         {/* Breadcrumb */}
         <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
+          <Link href="/">ਮੁੱਖ ਪੰਨਾ</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link href="/audio">Audio</Link>
+          <Link href="/audio">ਆਡੀਓ</Link>
           {series && (
             <>
               <span className="breadcrumb-sep">›</span>
@@ -115,7 +115,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
                         <path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
                       </svg>
                     </div>
-                    <div className="audio-author-label">Scholar</div>
+                    <div className="audio-author-label">ਕਥਾ ਵਾਚਕ</div>
                   </div>
                 </div>
 
@@ -178,7 +178,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
             {/* Chapters */}
             {(katha.chapters?.length ?? 0) > 0 && (
               <div className="sidebar-card">
-                <h3 className="sidebar-card-title">Chapters</h3>
+                <h3 className="sidebar-card-title">ਅਧਿਆਇ</h3>
                 <ChaptersList chapters={katha.chapters ?? []} />
               </div>
             )}
@@ -186,7 +186,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
             {/* About Series */}
             {series && (
               <div className="sidebar-card">
-                <h3 className="sidebar-card-title">About the Series</h3>
+                <h3 className="sidebar-card-title">ਲੜੀ ਬਾਰੇ</h3>
                 <div className="series-sidebar-thumb">
                   {series.thumbnail ? (
                     <img src={getThumbnailUrl(series.thumbnail)} alt={series.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
@@ -197,7 +197,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
                   <p className="series-sidebar-desc">{series.description}</p>
                 )}
                 <Link href={`/series/${series.slug}`} className="btn btn-outline btn-sm" style={{ marginTop: '12px' }}>
-                  View Series
+                  ਲੜੀ ਵੇਖੋ
                 </Link>
               </div>
             )}
@@ -205,7 +205,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
             {/* You Might Also Like */}
             {relatedKathas.length > 0 && (
               <div className="sidebar-card">
-                <h3 className="sidebar-card-title">You Might Also Like</h3>
+                <h3 className="sidebar-card-title">ਇਹ ਵੀ ਸੁਣੋ</h3>
                 <ul className="related-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   {relatedKathas.map((r) => (
                     <li key={r._id}>
@@ -235,12 +235,12 @@ export default async function AudioDetailPage({ params }: PageProps) {
 
             {/* Share */}
             <div className="sidebar-card">
-              <h3 className="sidebar-card-title">Share this Katha</h3>
+              <h3 className="sidebar-card-title">ਇਹ ਕਥਾ ਸਾਂਝੀ ਕਰੋ</h3>
               <ShareButtons title={katha.title} />
             </div>
             {katha.tags?.length > 0 && (
               <div className="sidebar-card">
-                <h3 className="sidebar-card-title">Tags</h3>
+                <h3 className="sidebar-card-title">ਟੈਗ</h3>
                 <div className="audio-tags sidebar-tags">
                   {katha.tags.map((tag) => (
                     <Link key={tag} href={`/search?q=${tag}`} className="audio-tag">

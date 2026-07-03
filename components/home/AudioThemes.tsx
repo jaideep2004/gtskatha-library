@@ -28,9 +28,9 @@ export default function AudioThemes({ categories }: AudioThemesProps) {
           {/* Left: theme circles */}
           <div className="at-left">
             <div className="section-header">
-              <h2 className="section-title">Audio by Themes</h2>
+              <h2 className="section-title">ਵਿਸ਼ਿਆਂ ਅਨੁਸਾਰ ਆਡੀਓ</h2>
               <Link href="/search" className="section-link">
-                All Topics
+                ਸਾਰੇ ਵਿਸ਼ੇ
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
@@ -83,8 +83,8 @@ export default function AudioThemes({ categories }: AudioThemesProps) {
               })}
               {!items.length && (
                 <div className="at-empty">
-                  <strong>Topics are being prepared.</strong>
-                  <span>New categories will appear here.</span>
+                  <strong>ਵਿਸ਼ੇ ਤਿਆਰ ਕੀਤੇ ਜਾ ਰਹੇ ਹਨ।</strong>
+                  <span>ਨਵੇਂ ਵਰਗ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</span>
                 </div>
               )}
             </div>
@@ -100,14 +100,14 @@ export default function AudioThemes({ categories }: AudioThemesProps) {
             <div className="at-cta-overlay" aria-hidden />
             <div className="at-cta-content">
               <h3 className="at-cta-title">
-                Immerse in Gurbani.<br />
-                Elevate Your Life.
+                ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਨਾਲ ਜੁੜੋ।<br />
+                ਜੀਵਨ ਨੂੰ ਉੱਚਾ ਕਰੋ।
               </h3>
               <p className="at-cta-sub">
-                Discover transformative kathas curated for your spiritual journey.
+                ਆਪਣੀ ਆਤਮਕ ਯਾਤਰਾ ਲਈ ਚੁਣੀ ਹੋਈ ਕਥਾ ਖੋਜੋ।
               </p>
               <Link href="/audio" className="at-cta-btn">
-                Explore Now
+                ਹੁਣ ਖੋਜੋ
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>

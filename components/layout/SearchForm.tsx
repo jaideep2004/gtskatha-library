@@ -34,15 +34,15 @@ export default function SearchForm({ defaultQ = '' }: { defaultQ?: string }) {
         <input
           type="search"
           className="input search-input-large"
-          placeholder="Search kathas, topics, series..."
+          placeholder="ਕਥਾ, ਵਿਸ਼ੇ, ਲੜੀਆਂ ਖੋਜੋ..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search kathas"
+          aria-label="ਕਥਾ ਖੋਜੋ"
           minLength={MIN_SEARCH_QUERY_LENGTH}
           autoFocus={false}
         />
       </div>
-      <button type="submit" className="btn btn-primary">Search</button>
+      <button type="submit" className="btn btn-primary">ਖੋਜੋ</button>
 
       <style>{`
         .search-form-large {

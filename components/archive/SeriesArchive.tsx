@@ -17,15 +17,12 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 				<div className='sa-overlay' aria-hidden />
 				<div className='container sa-copy'>
 					<nav>
-						<Link href='/'>Home</Link>
+						<Link href='/'>ਮੁੱਖ ਪੰਨਾ</Link>
 						<span>›</span>
-						<b>Series</b>
+						<b>ਲੜੀਆਂ</b>
 					</nav>
-					<h1>Series Archive</h1>
-					<p>
-						Explore curated katha collections organized for deeper, continuous
-						learning.
-					</p>
+					<h1>ਕਥਾ ਲੜੀਆਂ</h1>
+					<p>ਗਹਿਰਾਈ ਨਾਲ ਲਗਾਤਾਰ ਸਿੱਖਣ ਲਈ ਸਜਾਈਆਂ ਹੋਈਆਂ ਕਥਾ ਲੜੀਆਂ ਵੇਖੋ।</p>
 					<form>
 						<label>
 							<span>⌕</span>
@@ -33,7 +30,7 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 								name='q'
 								defaultValue={q}
 								minLength={MIN_SEARCH_QUERY_LENGTH}
-								placeholder='Search series by title or topic...'
+								placeholder='ਲੜੀ ਦਾ ਸਿਰਲੇਖ ਜਾਂ ਵਿਸ਼ਾ ਖੋਜੋ...'
 							/>
 						</label>
 						<button>Search</button>
@@ -42,20 +39,20 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 			</section>
 			<section className='container sa-body'>
 				<aside>
-					<h2>Collections</h2>
+					<h2>ਸੰਗ੍ਰਹਿ</h2>
 					<Link className={!q ? "active" : ""} href='/series'>
-						All series <span>{series.length}</span>
+						ਸਾਰੀਆਂ ਲੜੀਆਂ <span>{series.length}</span>
 					</Link>
-					<Link href='/series?sort=featured'>Featured first</Link>
+					<Link href='/series?sort=featured'>ਖਾਸ ਪਹਿਲਾਂ</Link>
 					<p>
-						Series and episode counts come directly from published library
-						content.
+						ਲੜੀਆਂ ਅਤੇ ਅਧਿਆਇਆਂ ਦੀ ਗਿਣਤੀ ਸਿੱਧੇ ਪ੍ਰਕਾਸ਼ਿਤ ਲਾਇਬ੍ਰੇਰੀ ਸਮੱਗਰੀ ਤੋਂ
+						ਆਉਂਦੀ ਹੈ।
 					</p>
 				</aside>
 				<div className='sa-results'>
 					<header>
 						<p>
-							<strong>{series.length}</strong> series found
+							<strong>{series.length}</strong> ਲੜੀਆਂ ਮਿਲੀਆਂ
 						</p>
 					</header>
 					{series.length ? (
@@ -75,21 +72,19 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 										) : (
 											<span>☬</span>
 										)}
-										<b>{episodeCounts[item._id] ?? 0} episodes</b>
+										<b>{episodeCounts[item._id] ?? 0} ਅਧਿਆਇ</b>
 									</div>
 									<section>
 										<h2>{item.title}</h2>
 										<p>
 											{item.description ||
-												"A curated Sikh Katha collection for focused learning."}
+												"ਕੇਂਦਰਿਤ ਸਿੱਖਿਆ ਲਈ ਚੁਣਿਆ ਹੋਇਆ ਸਿੱਖ ਕਥਾ ਸੰਗ੍ਰਹਿ।"}
 										</p>
 										<footer>
 											<span>
-												{item.featured
-													? "Featured series"
-													: "Digital collection"}
+												{item.featured ? "ਖਾਸ ਲੜੀ" : "ਡਿਜੀਟਲ ਸੰਗ੍ਰਹਿ"}
 											</span>
-											<b>Explore ›</b>
+											<b>ਵੇਖੋ ›</b>
 										</footer>
 									</section>
 								</Link>
@@ -98,14 +93,14 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 					) : (
 						<div className='sa-empty'>
 							<span>☬</span>
-							<h2>No matching series</h2>
-							<Link href='/series'>Clear search</Link>
+							<h2>ਮਿਲਦੀ ਲੜੀ ਨਹੀਂ ਲੱਭੀ</h2>
+							<Link href='/series'>ਖੋਜ ਹਟਾਓ</Link>
 						</div>
 					)}
 				</div>
 			</section>
 			<style>{`
-        .series-archive{min-height:100vh;background:#fbfaf7;padding-bottom:70px}.sa-hero{position:relative;min-height:335px;overflow:hidden;border-bottom:1px solid #e7e1d7}.sa-photo{position:absolute;inset:0;background:url('/images/gtshero3.png') 72% 42%/cover no-repeat}.sa-overlay{position:absolute;inset:0;background:linear-gradient(90deg,#fbfaf7 0%,rgba(251,250,247,.98) 31%,rgba(251,250,247,.7) 51%,transparent 78%)}.sa-copy{position:relative;padding-top:38px}.sa-copy nav{display:flex;gap:10px;font-size:14px;color:#667085}.sa-copy nav b{color:#27364d}.sa-copy h1{font-size:52px;color:#142039;margin:17px 0 10px}.sa-copy>p{font-size:17px;line-height:1.7;max-width:590px;color:#40506a}.sa-copy form{display:grid;grid-template-columns:minmax(0,580px) 105px;gap:12px;margin-top:24px;max-width:700px}.sa-copy label{height:52px;display:flex;align-items:center;gap:10px;padding:0 17px;background:#fff;border:1px solid #dfe2e7;border-radius:7px;box-shadow:0 8px 25px rgba(20,32,57,.08)}.sa-copy label span{font-size:24px}.sa-copy input{border:0;outline:0;width:100%;font-size:15px}.sa-copy button{background:#fff;border:1px solid #dfe2e7;border-radius:7px;font-size:14px;font-weight:700;color:#17233a}
+        .series-archive{min-height:100vh;background:#fbfaf7;padding-bottom:70px}.sa-hero{position:relative;min-height:335px;overflow:hidden;border-bottom:1px solid #e7e1d7}.sa-photo{position:absolute;inset:0;background:url('/images/archivebg.png') 72% 42%/cover no-repeat}.sa-overlay{position:absolute;inset:0;background:linear-gradient(90deg, #fbfaf7 0%, rgba(251, 250, 247, .98) 31%, rgb(251 250 247 / 22%) 51%, transparent 78%)}.sa-copy{position:relative;padding-top:38px}.sa-copy nav{display:flex;gap:10px;font-size:14px;color:#667085}.sa-copy nav b{color:#27364d}.sa-copy h1{font-size:52px;color:#142039;margin:17px 0 10px}.sa-copy>p{font-size:17px;line-height:1.7;max-width:590px;color:#40506a}.sa-copy form{display:grid;grid-template-columns:minmax(0,580px) 105px;gap:12px;margin-top:24px;max-width:700px}.sa-copy label{height:52px;display:flex;align-items:center;gap:10px;padding:0 17px;background:#fff;border:1px solid #dfe2e7;border-radius:7px;box-shadow:0 8px 25px rgba(20,32,57,.08)}.sa-copy label span{font-size:24px}.sa-copy input{border:0;outline:0;width:100%;font-size:15px}.sa-copy button{background:#fff;border:1px solid #dfe2e7;border-radius:7px;font-size:14px;font-weight:700;color:#17233a}
         .sa-body{
         display:grid;grid-template-columns:230px 1fr;gap:18px;
         margin-top:20px;

@@ -4,10 +4,11 @@ import KathaGrid from '@/components/katha/KathaGrid';
 import SearchForm from '@/components/layout/SearchForm';
 import { getKathas } from '@/services/kathaService';
 import { IKatha } from '@/types';
+import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'Search Kathas',
-  description: 'Search for Sikh kathas, series, and topics.',
+  title: 'ਕਥਾ ਖੋਜੋ',
+  description: 'ਸਿੱਖ ਕਥਾ, ਲੜੀਆਂ, ਅਤੇ ਵਿਸ਼ੇ ਖੋਜੋ।',
 };
 
 interface PageProps {
@@ -32,7 +33,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   try {
     const result = await getKathas({ q: q || undefined, type, sort, page, limit: 24 });
-    kathas = result.data as unknown as IKatha[];
+    kathas = serializeForClient(result.data) as unknown as IKatha[];
     total = result.total;
     totalPages = result.totalPages;
   } catch {
@@ -54,7 +55,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
         </nav> */}
 
         <div className="search-header">
-          <h1>{q ? `Results for "${q}"` : 'Search Kathas'}</h1>
+          <h1>{q ? `"${q}" ਲਈ ਨਤੀਜੇ` : 'ਕਥਾ ਖੋਜੋ'}</h1>
           <SearchForm defaultQ={q} />
         </div>
 
@@ -62,31 +63,31 @@ export default async function SearchPage({ searchParams }: PageProps) {
         <form className="search-filters" method="get">
           {q && <input type="hidden" name="q" value={q} />}
           <div className="filter-group">
-            <label className="form-label" htmlFor="filter-type">Type</label>
+            <label className="form-label" htmlFor="filter-type">ਕਿਸਮ</label>
             <select id="filter-type" name="type" className="input filter-select" defaultValue={type ?? ''}>
-              <option value="">All</option>
-              <option value="audio">Audio</option>
-              <option value="video">Video</option>
+              <option value="">ਸਭ</option>
+              <option value="audio">ਆਡੀਓ</option>
+              <option value="video">ਵੀਡੀਓ</option>
             </select>
           </div>
           <div className="filter-group">
-            <label className="form-label" htmlFor="filter-sort">Sort</label>
+            <label className="form-label" htmlFor="filter-sort">ਕ੍ਰਮ</label>
             <select id="filter-sort" name="sort" className="input filter-select" defaultValue={sort}>
-              <option value="newest">Newest</option>
-              <option value="popular">Most Popular</option>
-              <option value="featured">Featured</option>
+              <option value="newest">ਨਵੀਂ</option>
+              <option value="popular">ਸਭ ਤੋਂ ਪ੍ਰਸਿੱਧ</option>
+              <option value="featured">ਖਾਸ</option>
             </select>
           </div>
           <button type="submit" className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-end' }}>
-            Apply Filters
+            ਫਿਲਟਰ ਲਗਾਓ
           </button>
         </form>
 
         <div className="search-results-info">
           {q ? (
-            <p>{total > 0 ? `${total.toLocaleString()} results for "${q}"` : `No results for "${q}"`}</p>
+            <p>{total > 0 ? `"${q}" ਲਈ ${total.toLocaleString()} ਨਤੀਜੇ` : `"${q}" ਲਈ ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ`}</p>
           ) : (
-            <p>{total > 0 ? `${total.toLocaleString()} kathas` : 'All kathas'}</p>
+            <p>{total > 0 ? `${total.toLocaleString()} ਕਥਾਵਾਂ` : 'ਸਾਰੀਆਂ ਕਥਾਵਾਂ'}</p>
           )}
         </div>
 
@@ -104,7 +105,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
                     ← Previous
                   </Link>
                 )}
-                <span className="pagination-info">Page {page} of {totalPages}</span>
+                <span className="pagination-info">ਪੰਨਾ {page} / {totalPages}</span>
                 {page < totalPages && (
                   <Link
                     href={`/search?q=${q}&type=${type ?? ''}&sort=${sort}&page=${page + 1}`}
@@ -119,10 +120,10 @@ export default async function SearchPage({ searchParams }: PageProps) {
         ) : (
           <div className="empty-state">
             <div className="empty-state-icon">🔍</div>
-            <h3>{q ? `No results for "${q}"` : 'No kathas found'}</h3>
-            <p>Try different keywords or browse by category.</p>
+            <h3>{q ? `"${q}" ਲਈ ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ` : 'ਕੋਈ ਕਥਾ ਨਹੀਂ ਲੱਭੀ'}</h3>
+            <p>ਹੋਰ ਸ਼ਬਦਾਂ ਨਾਲ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਵਰਗ ਅਨੁਸਾਰ ਵੇਖੋ।</p>
             <Link href="/audio" className="btn btn-primary" style={{ marginTop: 'var(--space-5)', display: 'inline-flex' }}>
-              Browse Audio Kathas
+              ਆਡੀਓ ਕਥਾ ਵੇਖੋ
             </Link>
           </div>
         )}

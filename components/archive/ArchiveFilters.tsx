@@ -41,12 +41,12 @@ export default function ArchiveFilters({ type, categories, series, query }: Arch
   return (
     <aside className="archive-filters">
       <div className="archive-filter-head">
-        <h2>Filters</h2>
-        <Link href={`/${type}`}>Reset</Link>
+        <h2>Filter</h2>
+        <Link href={`/${type}`}>ਰੀਸੈਟ</Link>
       </div>
       <form>
         <fieldset>
-          <legend>Category</legend>
+          <legend>ਵਰਗ</legend>
           <label>
             <input
               type="radio"
@@ -55,7 +55,7 @@ export default function ArchiveFilters({ type, categories, series, query }: Arch
               checked={!query.category}
               onChange={(event) => updateFilter('category', event.target.value)}
             />{' '}
-            All categories
+            ਸਾਰੇ ਵਰਗ
           </label>
           {categories.map((category) => (
             <label key={category._id}>
@@ -71,13 +71,13 @@ export default function ArchiveFilters({ type, categories, series, query }: Arch
           ))}
         </fieldset>
         <label className="archive-select-label">
-          Series
+          ਲੜੀ
           <select
             name="series"
             value={query.series ?? ''}
             onChange={(event) => updateFilter('series', event.target.value)}
           >
-            <option value="">All series</option>
+            <option value="">ਸਾਰੀਆਂ ਲੜੀਆਂ</option>
             {series.map((item) => (
               <option key={item._id} value={item.slug}>
                 {item.title}
@@ -86,16 +86,16 @@ export default function ArchiveFilters({ type, categories, series, query }: Arch
           </select>
         </label>
         <label className="archive-select-label">
-          Sort by
+          ਕ੍ਰਮ
           <select
             name="sort"
             value={query.sort ?? 'newest'}
             onChange={(event) => updateFilter('sort', event.target.value)}
           >
-            <option value="newest">Latest first</option>
-            <option value="popular">Most popular</option>
-            <option value="featured">Featured</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">ਨਵੀਂ ਪਹਿਲਾਂ</option>
+            <option value="popular">ਸਭ ਤੋਂ ਪ੍ਰਸਿੱਧ</option>
+            <option value="featured">ਖਾਸ</option>
+            <option value="oldest">ਪੁਰਾਣੀ ਪਹਿਲਾਂ</option>
           </select>
         </label>
       </form>

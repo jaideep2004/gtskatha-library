@@ -4,10 +4,11 @@ import { getKathas } from '@/services/kathaService';
 import { getCategories } from '@/services/categoryService';
 import { getAllSeries } from '@/services/seriesService';
 import type { ICategory, IKatha, ISeries } from '@/types';
+import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'Audio Kathas Archive',
-  description: 'Browse Sikh audio kathas, Gurbani discourses, and spiritual talks.',
+  title: 'ਆਡੀਓ ਕਥਾ ਭੰਡਾਰ',
+  description: 'ਸਿੱਖ ਆਡੀਓ ਕਥਾ, ਗੁਰਬਾਣੀ ਵਿਚਾਰ, ਅਤੇ ਆਤਮਕ ਸਿੱਖਿਆ ਸੁਣੋ।',
 };
 
 interface Props {
@@ -27,9 +28,9 @@ export default async function AudioPage({ searchParams }: Props) {
   return (
     <KathaArchive
       type="audio"
-      kathas={result.data as unknown as IKatha[]}
-      categories={categories as unknown as ICategory[]}
-      series={series as unknown as ISeries[]}
+      kathas={serializeForClient(result.data) as unknown as IKatha[]}
+      categories={serializeForClient(categories) as unknown as ICategory[]}
+      series={serializeForClient(series) as unknown as ISeries[]}
       total={result.total}
       page={result.page}
       totalPages={result.totalPages}

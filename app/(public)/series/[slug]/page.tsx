@@ -7,6 +7,7 @@ import { getKathas } from '@/services/kathaService';
 import { ISeries, IKatha } from '@/types';
 import { getThumbnailUrl } from '@/lib/utils';
 import { getMediaUrl } from '@/lib/media';
+import { serializeForClient } from '@/lib/serialize';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -34,7 +35,8 @@ export default async function SeriesDetailPage({ params }: PageProps) {
   let kathas: IKatha[] = [];
 
   try {
-    series = await getSeriesBySlug(slug) as ISeries | null;
+    const rawSeries = await getSeriesBySlug(slug) as ISeries | null;
+    series = rawSeries ? serializeForClient(rawSeries) : null;
     if (!series) notFound();
 
     const result = await getKathas({
@@ -42,7 +44,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
       sort: 'newest',
       limit: 100,
     });
-    kathas = result.data as unknown as IKatha[];
+    kathas = serializeForClient(result.data) as unknown as IKatha[];
   } catch {
     if (!series) notFound();
   }
@@ -55,9 +57,9 @@ export default async function SeriesDetailPage({ params }: PageProps) {
     <div className="page-section">
       <div className="container">
         <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
+          <Link href="/">ਮੁੱਖ ਪੰਨਾ</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link href="/series">Series</Link>
+          <Link href="/series">ਲੜੀਆਂ</Link>
           <span className="breadcrumb-sep">›</span>
           <span>{series!.title}</span>
         </nav>
@@ -76,9 +78,9 @@ export default async function SeriesDetailPage({ params }: PageProps) {
 
           <div className="series-detail-info">
             <div className="series-detail-badges">
-              <span className="badge badge-primary">Series</span>
+              <span className="badge badge-primary">ਲੜੀ</span>
               {series!.featured && (
-                <span className="badge badge-success">Featured</span>
+                <span className="badge badge-success">ਖਾਸ</span>
               )}
             </div>
 
@@ -93,7 +95,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
                 </svg>
-                {kathas.length} {kathas.length === 1 ? 'Episode' : 'Episodes'}
+                {kathas.length} {kathas.length === 1 ? 'ਅਧਿਆਇ' : 'ਅਧਿਆਇ'}
               </span>
             </div>
 
@@ -105,7 +107,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
-                Start from Beginning
+                ਸ਼ੁਰੂ ਤੋਂ ਚਲਾਓ
               </Link>
             )}
           </div>
@@ -114,8 +116,8 @@ export default async function SeriesDetailPage({ params }: PageProps) {
         {/* Episodes */}
         <div className="series-episodes">
           <div className="series-episodes-header">
-            <h2>Episodes</h2>
-            <span className="series-episodes-count">{kathas.length} total</span>
+            <h2>ਅਧਿਆਇ</h2>
+            <span className="series-episodes-count">{kathas.length} ਕੁੱਲ</span>
           </div>
 
           {kathas.length > 0 ? (
@@ -123,8 +125,8 @@ export default async function SeriesDetailPage({ params }: PageProps) {
           ) : (
             <div className="empty-state">
               <div className="empty-state-icon">🎵</div>
-              <h3>No episodes yet</h3>
-              <p>Episodes will appear here once added to this series.</p>
+              <h3>ਹਾਲੇ ਕੋਈ ਅਧਿਆਇ ਨਹੀਂ</h3>
+              <p>ਇਸ ਲੜੀ ਵਿੱਚ ਜੋੜੇ ਜਾਣ ਤੋਂ ਬਾਅਦ ਅਧਿਆਇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</p>
             </div>
           )}
         </div>

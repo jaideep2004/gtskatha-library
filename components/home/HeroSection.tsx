@@ -1,211 +1,297 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { IKatha } from '@/types';
-import { usePlayerContext } from '@/context/PlayerContext';
-import { formatDuration } from '@/lib/utils';
-import { getMediaUrl } from '@/lib/media';
+import Link from "next/link";
+import { IKatha } from "@/types";
+import { usePlayerContext } from "@/context/PlayerContext";
+import { formatDuration } from "@/lib/utils";
+import { getMediaUrl } from "@/lib/media";
 
 interface HeroSectionProps {
-  heroKatha?: IKatha | null;
+	heroKatha?: IKatha | null;
 }
 
 const QUICK_LINKS = [
-  {
-    href: '/audio',
-    label: 'Audio Kathas',
-    sub: 'Listen anywhere',
-    tint: '#FFF4E6',
-    iconColor: '#D98C29',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/video',
-    label: 'Video Kathas',
-    sub: 'Watch & learn',
-    tint: '#F3EEFF',
-    iconColor: '#7C5CBF',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/series',
-    label: 'Series',
-    sub: 'In-depth learning',
-    tint: '#EEF8F0',
-    iconColor: '#3D9B5F',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/topics',
-    label: 'Topics',
-    sub: 'Explore by topics',
-    tint: '#FFF4E6',
-    iconColor: '#D98C29',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/profile/favorites',
-    label: 'My Library',
-    sub: 'Saved & history',
-    tint: '#EEF4FF',
-    iconColor: '#4A7FD4',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-    ),
-  },
+	{
+		href: "/audio",
+		label: "ਆਡੀਓ ਕਥਾ",
+		sub: "ਕਿਤੇ ਵੀ ਸੁਣੋ",
+		tint: "#FFF4E6",
+		iconColor: "#D98C29",
+		icon: (
+			<svg
+				width='20'
+				height='20'
+				viewBox='0 0 24 24'
+				fill='none'
+				stroke='currentColor'
+				strokeWidth='1.75'>
+				<path d='M9 18V5l12-2v13' />
+				<circle cx='6' cy='18' r='3' />
+				<circle cx='18' cy='16' r='3' />
+			</svg>
+		),
+	},
+	{
+		href: "/video",
+		label: "ਵੀਡੀਓ ਕਥਾ",
+		sub: "ਵੇਖੋ ਤੇ ਸਿੱਖੋ",
+		tint: "#F3EEFF",
+		iconColor: "#7C5CBF",
+		icon: (
+			<svg
+				width='20'
+				height='20'
+				viewBox='0 0 24 24'
+				fill='none'
+				stroke='currentColor'
+				strokeWidth='1.75'>
+				<polygon points='23 7 16 12 23 17 23 7' />
+				<rect x='1' y='5' width='15' height='14' rx='2' />
+			</svg>
+		),
+	},
+	{
+		href: "/series",
+		label: "ਲੜੀਆਂ",
+		sub: "ਗਹਿਰਾਈ ਨਾਲ ਸਿੱਖੋ",
+		tint: "#EEF8F0",
+		iconColor: "#3D9B5F",
+		icon: (
+			<svg
+				width='20'
+				height='20'
+				viewBox='0 0 24 24'
+				fill='none'
+				stroke='currentColor'
+				strokeWidth='1.75'>
+				<path d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20' />
+			</svg>
+		),
+	},
+	{
+		href: "/topics",
+		label: "ਵਿਸ਼ੇ",
+		sub: "ਵਿਸ਼ੇ ਅਨੁਸਾਰ ਖੋਜੋ",
+		tint: "#FFF4E6",
+		iconColor: "#D98C29",
+		icon: (
+			<svg
+				width='20'
+				height='20'
+				viewBox='0 0 24 24'
+				fill='none'
+				stroke='currentColor'
+				strokeWidth='1.75'>
+				<rect x='3' y='3' width='7' height='7' rx='1' />
+				<rect x='14' y='3' width='7' height='7' rx='1' />
+				<rect x='3' y='14' width='7' height='7' rx='1' />
+				<rect x='14' y='14' width='7' height='7' rx='1' />
+			</svg>
+		),
+	},
+	{
+		href: "/profile/favorites",
+		label: "ਮੇਰੀ ਲਾਇਬ੍ਰੇਰੀ",
+		sub: "ਸੰਭਾਲੀ ਕਥਾ",
+		tint: "#EEF4FF",
+		iconColor: "#4A7FD4",
+		icon: (
+			<svg
+				width='20'
+				height='20'
+				viewBox='0 0 24 24'
+				fill='none'
+				stroke='currentColor'
+				strokeWidth='1.75'>
+				<path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' />
+			</svg>
+		),
+	},
 ];
 
 export default function HeroSection({ heroKatha }: HeroSectionProps) {
-  const { play, katha: playingKatha, isPlaying, pause, resume } = usePlayerContext();
-  const waveHeights = [6,10,16,12,20,14,8,18,13,22,17,11,19,15,7,21,11,16,9,18,13,8,20,12,16,10,14,19,7,22,11,15];
+	const {
+		play,
+		katha: playingKatha,
+		isPlaying,
+		pause,
+		resume,
+	} = usePlayerContext();
+	const waveHeights = [
+		6, 10, 16, 12, 20, 14, 8, 18, 13, 22, 17, 11, 19, 15, 7, 21, 11, 16, 9, 18,
+		13, 8, 20, 12, 16, 10, 14, 19, 7, 22, 11, 15,
+	];
 
-  const cardKatha = heroKatha ?? playingKatha;
-  const cardTitle = cardKatha?.title ?? '';
-  const cardDuration = cardKatha?.duration ? formatDuration(cardKatha.duration) : '';
-  const isCardPlaying = playingKatha?.slug === cardKatha?.slug && isPlaying;
+	const cardKatha = heroKatha ?? playingKatha;
+	const cardTitle = cardKatha?.title ?? "";
+	const cardDuration = cardKatha?.duration
+		? formatDuration(cardKatha.duration)
+		: "";
+	const isCardPlaying = playingKatha?.slug === cardKatha?.slug && isPlaying;
 
-  function handleCardPlay() {
-    if (!cardKatha) return;
-    if (playingKatha?.slug === cardKatha.slug) {
-      if (isPlaying) { pause(); } else { resume(); }
-    } else {
-      play(cardKatha);
-    }
-  }
+	function handleCardPlay() {
+		if (!cardKatha) return;
+		if (playingKatha?.slug === cardKatha.slug) {
+			if (isPlaying) {
+				pause();
+			} else {
+				resume();
+			}
+		} else {
+			play(cardKatha);
+		}
+	}
 
-  return (
-    <section className="h-section">
-      <div className="h-bg" aria-hidden>
-        <div
-          className="h-bg-photo"
-          style={{ backgroundImage: "url('/images/gtshero1.png')" }}
-        />
-        <div className="h-bg-overlay" />
-      </div>
+	return (
+		<section className='h-section'>
+			<div className='h-bg' aria-hidden>
+				<div
+					className='h-bg-photo'
+					style={{ backgroundImage: "url('/images/gtshero1.png')" }}
+				/>
+				<div className='h-bg-overlay' />
+			</div>
 
-      <div className="h-inner container">
-        <div className="h-text animate-slideUp">
-          <p className="h-eyebrow">TIMELESS WISDOM. ENDLESS IMPACT.</p>
+			<div className='h-inner container'>
+				<div className='h-text animate-slideUp'>
+					<p className='h-eyebrow'>ਸਦੀਵੀ ਸਿੱਖਿਆ। ਗਹਿਰਾ ਅਸਰ।</p>
 
-          <h1 className="h-headline">
-            Kathas that Inspire.<br />
-            Wisdom that <em className="h-gold">Transforms.</em>
-          </h1>
+					<h1 className='h-headline'>
+						ਪ੍ਰੇਰਣਾ ਬਖ਼ਸ਼ਣ ਵਾਲੀਆਂ ਕਥਾਵਾਂ।
+						<br />
+						<em className='h-gold'>ਜੀਵਨ ਨੂੰ ਬਦਲਣ ਵਾਲਾ ਗੁਰਮਤਿ ਗਿਆਨ।</em>
+					</h1>
 
-          <p className="h-sub">
-            Explore Gurbani wisdom through audio and video kathas by Bhai Sahib Ji.
-          </p>
+					<p className='h-sub'>
+						<b>ਗਿਆਨੀ ਠਾਕੁਰ ਸਿੰਘ ਜੀ</b> ਦੀ ਆਡੀਓ ਤੇ ਵੀਡੀਓ ਕਥਾ ਰਾਹੀਂ ਗੁਰਬਾਣੀ ਦੀ ਵਿਚਾਰ ਨਾਲ ਜੁੜੋ।
+					</p>
 
-          <div className="h-ctas">
-            <Link href="/audio" className="h-btn-primary">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Listen Now
-            </Link>
-            <Link href="/video" className="h-btn-outline">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-              </svg>
-              Watch Now
-            </Link>
-          </div>
+					<div className='h-ctas'>
+						<Link href='/audio' className='h-btn-primary'>
+							<svg
+								width='14'
+								height='14'
+								viewBox='0 0 24 24'
+								fill='currentColor'>
+								<polygon points='5 3 19 12 5 21 5 3' />
+							</svg>
+							ਹੁਣ ਸੁਣੋ
+						</Link>
+						<Link href='/video' className='h-btn-outline'>
+							<svg
+								width='14'
+								height='14'
+								viewBox='0 0 24 24'
+								fill='none'
+								stroke='currentColor'
+								strokeWidth='2'>
+								<polygon points='23 7 16 12 23 17 23 7' />
+								<rect x='1' y='5' width='15' height='14' rx='2' />
+							</svg>
+							ਹੁਣ ਵੇਖੋ
+						</Link>
+					</div>
 
-          <div className="h-promise">
-            <span aria-hidden>☬</span>
-            <p>Preserving timeless Sikh wisdom in one peaceful digital library.</p>
-          </div>
+					<div className='h-promise'>
+						<span aria-hidden>☬</span>
+						<p>
+							ਸਿੱਖ ਸਿੱਖਿਆ ਦੀ ਸਦੀਵੀ ਰੌਸ਼ਨੀ ਨੂੰ ਇਕ ਡਿਜੀਟਲ ਲਾਇਬ੍ਰੇਰੀ ਵਿੱਚ
+							ਸੰਭਾਲਿਆ ਗਿਆ ਹੈ।
+						</p>
+					</div>
+				</div>
 
-        </div>
+				{/* DYNAMIC: currently playing card — fed by heroKatha or PlayerContext */}
+				{cardKatha && (
+					<div className='h-card'>
+						<p className='h-card-label'>
+							<span className='h-card-dot' />
+							ਇਸ ਵੇਲੇ ਚੱਲ ਰਿਹਾ ਹੈ
+						</p>
 
-        {/* DYNAMIC: currently playing card — fed by heroKatha or PlayerContext */}
-        {cardKatha && (
-        <div className="h-card">
-          <p className="h-card-label">
-            <span className="h-card-dot" />
-            CURRENTLY PLAYING
-          </p>
+						<div className='h-card-row'>
+							<div className='h-card-thumb'>
+								{cardKatha.thumbnail ? (
+									<img
+										src={getMediaUrl("thumbnails", cardKatha.thumbnail)}
+										alt={cardTitle}
+									/>
+								) : (
+									<div className='h-card-thumb-bg' aria-hidden />
+								)}
+							</div>
 
-          <div className="h-card-row">
-            <div className="h-card-thumb">
-              {cardKatha.thumbnail ? (
-                <img src={getMediaUrl('thumbnails', cardKatha.thumbnail)} alt={cardTitle} />
-              ) : <div className="h-card-thumb-bg" aria-hidden />}
-            </div>
+							<div className='h-card-info'>
+								<p className='h-card-title'>{cardTitle}</p>
+								<p className='h-card-author'>
+									{cardKatha.authorName || "Sikh Katha Digital Library"}
+								</p>
+								<p className='h-card-time'>{cardDuration}</p>
+							</div>
 
-            <div className="h-card-info">
-              <p className="h-card-title">{cardTitle}</p>
-              <p className="h-card-author">{cardKatha.authorName || 'Sikh Katha Digital Library'}</p>
-              <p className="h-card-time">{cardDuration}</p>
-            </div>
+							<button
+								className='h-card-btn'
+								aria-label={isCardPlaying ? "Pause" : "Play"}
+								onClick={handleCardPlay}>
+								{isCardPlaying ? (
+									<svg
+										width='16'
+										height='16'
+										viewBox='0 0 24 24'
+										fill='currentColor'>
+										<rect x='6' y='4' width='4' height='16' rx='1' />
+										<rect x='14' y='4' width='4' height='16' rx='1' />
+									</svg>
+								) : (
+									<svg
+										width='16'
+										height='16'
+										viewBox='0 0 24 24'
+										fill='currentColor'>
+										<polygon points='5 3 19 12 5 21 5 3' />
+									</svg>
+								)}
+							</button>
+						</div>
 
-            <button className="h-card-btn" aria-label={isCardPlaying ? 'Pause' : 'Play'} onClick={handleCardPlay}>
-              {isCardPlaying ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1"/>
-                  <rect x="14" y="4" width="4" height="16" rx="1"/>
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-              )}
-            </button>
-          </div>
+						<div className='h-wave' aria-hidden>
+							{waveHeights.map((h, i) => (
+								<div
+									key={i}
+									className='h-wbar'
+									style={{
+										height: h,
+										animationDelay: `${(i * 0.055) % 0.75}s`,
+										opacity: i < 24 ? 1 : 0.25,
+									}}
+								/>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
 
-          <div className="h-wave" aria-hidden>
-            {waveHeights.map((h, i) => (
-              <div
-                key={i}
-                className="h-wbar"
-                style={{
-                  height: h,
-                  animationDelay: `${(i * 0.055) % 0.75}s`,
-                  opacity: i < 24 ? 1 : 0.25,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        )}
-      </div>
+			<div className='h-strip'>
+				<div className='container'>
+					<div className='h-strip-row'>
+						{QUICK_LINKS.map((item) => (
+							<Link key={item.href} href={item.href} className='h-strip-item'>
+								<span
+									className='h-strip-icon'
+									style={{ background: item.tint, color: item.iconColor }}>
+									{item.icon}
+								</span>
+								<div>
+									<div className='h-strip-label'>{item.label}</div>
+									<div className='h-strip-sub'>{item.sub}</div>
+								</div>
+							</Link>
+						))}
+					</div>
+				</div>
+			</div>
 
-      <div className="h-strip">
-        <div className="container">
-          <div className="h-strip-row">
-            {QUICK_LINKS.map(item => (
-              <Link key={item.href} href={item.href} className="h-strip-item">
-                <span className="h-strip-icon" style={{ background: item.tint, color: item.iconColor }}>
-                  {item.icon}
-                </span>
-                <div>
-                  <div className="h-strip-label">{item.label}</div>
-                  <div className="h-strip-sub">{item.sub}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <style>{`
+			<style>{`
         .h-section {
           position: relative;
           display: flex;
@@ -258,7 +344,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
         }
 
         .h-text {
-          max-width: 405px;
+          max-width: 536px;
           flex-shrink: 0;
         }
 
@@ -276,22 +362,23 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           font-size: clamp(43px, 4vw, 56px);
           font-weight: 700;
           color: var(--color-text-primary);
-          line-height: 1.06;
+          line-height: 1.3;
           margin-bottom: 18px;
           letter-spacing: 0;
         }
 
         .h-gold {
           color: var(--color-primary-light);
-          font-style: italic;
+          font-style:normal !important;
         }
 
         .h-sub {
           font-size: 14px;
-          color: var(--color-text-secondary);
+          color: black;
           line-height: 1.65;
           margin-bottom: 28px;
           max-width: 365px;
+          font-weight:500;
         }
 
         .h-ctas {
@@ -581,6 +668,6 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           .h-text { max-width: 330px; }
         }
       `}</style>
-    </section>
-  );
+		</section>
+	);
 }

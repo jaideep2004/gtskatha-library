@@ -53,7 +53,7 @@ export const ADMIN_MUTATION_LIMIT = {
 } satisfies RateLimitPolicy;
 
 export const UPLOAD_LIMIT = {
-  limit: 20,
+  limit: 80,
   windowMs: 60_000,
   scope: 'media-upload',
 } satisfies RateLimitPolicy;

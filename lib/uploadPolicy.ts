@@ -25,12 +25,25 @@ const MAX_SIZES: Record<MediaFolder, number> = {
   series: 20 * 1024 * 1024,
 };
 
+const ALLOWED_EXTENSIONS: Record<MediaFolder, string[]> = {
+  audio: ['.mp3', '.mpeg', '.mpga', '.wav', '.ogg', '.flac'],
+  video: ['.mp4', '.webm', '.ogv', '.ogg', '.mpeg'],
+  thumbnails: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+  series: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+};
+
 export function isMediaFolder(value: string): value is MediaFolder {
   return value in ALLOWED_TYPES;
 }
 
-export function validateUpload(folder: MediaFolder, mimeType: string, size: number) {
-  if (!ALLOWED_TYPES[folder].includes(mimeType)) {
+export function validateUpload(folder: MediaFolder, mimeType: string, size: number, filename = '') {
+  const normalizedMimeType = mimeType.toLowerCase().trim();
+  const extension = filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] ?? '';
+  const hasAllowedMimeType = ALLOWED_TYPES[folder].includes(normalizedMimeType);
+  const canInferFromExtension = ['image/jpg', 'application/octet-stream', ''].includes(normalizedMimeType)
+    && ALLOWED_EXTENSIONS[folder].includes(extension);
+
+  if (!hasAllowedMimeType && !canInferFromExtension) {
     throw new Error(`Invalid ${folder === 'thumbnails' || folder === 'series' ? 'image' : folder} format`);
   }
   if (!Number.isFinite(size) || size <= 0 || size > MAX_SIZES[folder]) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getMediaUrl } from '@/lib/media';
+import { uploadMediaFile } from '@/lib/clientUpload';
 import { toast } from 'sonner';
 
 type UploadFolder = 'audio' | 'video' | 'thumbnails' | 'series';
@@ -75,56 +76,15 @@ export default function FileUpload({
     abortRef.current = controller;
 
     try {
-      const initResponse = await fetch('/api/upload/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: file.name,
-          folder,
-          mimeType: file.type,
-          size: file.size,
-        }),
+      const filename = await uploadMediaFile(file, folder, {
         signal: controller.signal,
+        onProgress: (nextProgress, isProcessing) => {
+          setProgress(nextProgress);
+          setProcessing(isProcessing);
+        },
       });
-      const initPayload = await initResponse.json();
-      if (!initResponse.ok || !initPayload.success) {
-        throw new Error(initPayload.error ?? 'Upload initialization failed');
-      }
-
-      const { sessionId, chunkSize, chunkCount } = initPayload.data as {
-        sessionId: string;
-        chunkSize: number;
-        chunkCount: number;
-      };
-      sessionRef.current = sessionId;
-
-      for (let index = 0; index < chunkCount; index += 1) {
-        const chunk = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
-        const response = await fetchWithRetry(`/api/upload/sessions/${sessionId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'X-Chunk-Index': String(index),
-          },
-          body: chunk,
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error ?? 'Chunk upload failed');
-        setProgress(Math.round(((index + 1) / chunkCount) * 95));
-      }
-
-      setProcessing(true);
-      const completeResponse = await fetchWithRetry(`/api/upload/sessions/${sessionId}`, {
-        method: 'POST',
-        signal: controller.signal,
-      });
-      const completePayload = await completeResponse.json();
-      if (!completeResponse.ok || !completePayload.success) {
-        throw new Error(completePayload.error ?? 'Upload completion failed');
-      }
-      setUploaded(completePayload.data.filename);
-      onUploaded(completePayload.data.filename);
+      setUploaded(filename);
+      onUploaded(filename);
       setProgress(100);
       setProcessing(false);
       setSelectedName('');
@@ -156,25 +116,6 @@ export default function FileUpload({
       }
       abortRef.current = null;
     }
-  }
-
-  async function fetchWithRetry(
-    input: RequestInfo | URL,
-    init: RequestInit,
-    attempts = 3
-  ): Promise<Response> {
-    let lastError: unknown;
-    for (let attempt = 1; attempt <= attempts; attempt += 1) {
-      try {
-        const response = await fetch(input, init);
-        if (response.ok || response.status < 500 || attempt === attempts) return response;
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') throw error;
-        lastError = error;
-      }
-      await new Promise((resolve) => setTimeout(resolve, attempt * 700));
-    }
-    throw lastError instanceof Error ? lastError : new Error('Upload request failed');
   }
 
   const storedPreview = uploaded ? getMediaUrl(folder, uploaded) : '';

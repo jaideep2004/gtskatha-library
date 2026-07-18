@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatDuration, formatDate, generateSlug } from '@/lib/utils';
 import FileUpload from '@/components/admin/FileUpload';
+import BulkAudioKathaUpload from '@/components/admin/BulkAudioKathaUpload';
 import AdminThumbnail from '@/components/admin/AdminThumbnail';
 import { toast } from 'sonner';
 
@@ -89,6 +90,7 @@ export default function KathasAdminPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(empty);
   const [saving, setSaving] = useState(false);
@@ -298,7 +300,18 @@ export default function KathasAdminPage() {
           </svg>
           Add Katha
         </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setShowBulkUpload((visible) => !visible)}>
+          {showBulkUpload ? 'Close Bulk Upload' : 'Bulk Upload Audio'}
+        </button>
       </div>
+
+      {showBulkUpload && (
+        <BulkAudioKathaUpload
+          categories={categories}
+          series={seriesOptions}
+          onComplete={() => { void loadKathas(); }}
+        />
+      )}
 
       {showForm && (
         <div className="admin-form-card">

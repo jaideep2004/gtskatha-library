@@ -15,6 +15,26 @@ import { DomainError } from '@/lib/domainError';
 import { deleteFile } from '@/services/uploadService';
 import type { MediaFolder } from '@/lib/media';
 import { isSearchQueryReady } from '@/lib/search';
+import { generateSlug } from '@/lib/utils';
+
+export interface BulkAudioKathaInput {
+  title: string;
+  description?: string;
+  thumbnail?: string;
+  audioUrl: string;
+  duration?: number;
+  categoryId?: string | null;
+  seriesId?: string | null;
+  tags?: string[];
+  featured?: boolean;
+  published?: boolean;
+  status?: 'draft' | 'published' | 'archived';
+  allowDownload?: boolean;
+  authorName?: string;
+  keyTakeaways?: string[];
+  references?: string[];
+  chapters?: Array<{ id: string; title: string; startTime: number; duration: number }>;
+}
 
 function publicKathaQuery(): Record<string, unknown> {
   return {
@@ -186,6 +206,30 @@ export async function createKatha(data: Partial<{
   assertMediaRequirements(data);
   const katha = new Katha(data);
   return katha.save();
+}
+
+export async function createBulkAudioKathas(items: BulkAudioKathaInput[]) {
+  await connectDB();
+  const reservedSlugs = new Set<string>();
+  const results: Array<{ katha?: Awaited<ReturnType<typeof createKatha>>; error?: string }> = [];
+
+  for (const item of items) {
+    try {
+      const slug = await reserveKathaSlug(item.title, reservedSlugs);
+      const katha = await createKatha({
+        ...item,
+        categoryId: item.categoryId ?? undefined,
+        seriesId: item.seriesId ?? undefined,
+        type: 'audio',
+        slug,
+      });
+      results.push({ katha });
+    } catch (error) {
+      results.push({ error: error instanceof Error ? error.message : 'Katha creation failed' });
+    }
+  }
+
+  return results;
 }
 
 export async function getAdminKathaBySlug(slug: string) {
@@ -361,6 +405,20 @@ function assertMediaRequirements(data: Record<string, unknown>) {
   if (!data.thumbnail) {
     throw new DomainError('Published katha requires a thumbnail', 400);
   }
+}
+
+async function reserveKathaSlug(title: string, reservedSlugs: Set<string>) {
+  const base = generateSlug(title) || 'katha';
+  let candidate = base;
+  let suffix = 2;
+
+  while (reservedSlugs.has(candidate) || await Katha.exists({ slug: candidate })) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  reservedSlugs.add(candidate);
+  return candidate;
 }
 
 async function deleteMediaIfPresent(value: string | undefined, folder: MediaFolder) {

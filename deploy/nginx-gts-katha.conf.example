@@ -2,7 +2,7 @@ server {
     listen 443 ssl http2;
     server_name YOUR_DOMAIN;
 
-    # Browser sends 5 MB upload chunks, not whole 30-60 minute media files.
+    # Browser sends 2 MB upload chunks by default, not whole 30-60 minute media files.
     client_max_body_size 8m;
     client_body_timeout 300s;
     proxy_connect_timeout 60s;

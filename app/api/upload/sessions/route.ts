@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (!name || name.length > 255 || !isMediaFolder(folder)) {
       return NextResponse.json({ success: false, error: 'Invalid upload request' }, { status: 400 });
     }
-    validateUpload(folder, mimeType, size);
+    validateUpload(folder, mimeType, size, name);
     const session = await createUploadSession({ originalName: name, folder, mimeType, size });
     return NextResponse.json({ success: true, data: session }, { status: 201 });
   } catch (error) {

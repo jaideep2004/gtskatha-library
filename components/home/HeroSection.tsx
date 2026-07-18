@@ -151,9 +151,10 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
 				/>
 				<div className='h-bg-overlay' />
 			</div>
+			<div className='h-ik-onkar' aria-hidden>ੴ</div>
 
 			<div className='h-inner container'>
-				<div className='h-text animate-slideUp'>
+				<div className='h-text'>
 					<p className='h-eyebrow'>ਸਦੀਵੀ ਸਿੱਖਿਆ। ਗਹਿਰਾ ਅਸਰ।</p>
 
 					<h1 className='h-headline'>
@@ -292,6 +293,15 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
 			</div>
 
 			<style>{`
+        @font-face {
+          font-family: 'Raaj___5';
+          src:
+            local('raaj___5'),
+            url('/fonts/raaj___5.woff2') format('woff2'),
+            url('/fonts/raaj___5.ttf') format('truetype');
+          font-display: swap;
+        }
+
         .h-section {
           position: relative;
           display: flex;
@@ -299,6 +309,23 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           min-height: 625px;
           overflow: hidden;
           background: #fffdf9;
+        }
+
+        .h-section::after {
+          position: absolute;
+          z-index: 0;
+          inset: -18% -44%;
+          background: linear-gradient(108deg,
+            transparent 43%,
+            rgba(244, 203, 126, 0.02) 47%,
+            rgba(255, 249, 232, 0.28) 50%,
+            rgba(226, 174, 82, 0.10) 52%,
+            transparent 57%
+          );
+          content: '';
+          pointer-events: none;
+          transform: translateX(-42%) skewX(-8deg);
+          animation: h-hero-shine 13s cubic-bezier(.32,.02,.18,1) infinite 1.6s;
         }
 
         .h-bg {
@@ -314,6 +341,9 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           background-position: center -160px;
           background-repeat: no-repeat;
           background-color: #f7f3ec;
+          transform: scale(1.025);
+          animation: h-photo-breathe 18s ease-in-out infinite alternate;
+          will-change: transform;
         }
 
         .h-bg-overlay {
@@ -328,6 +358,23 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
               transparent 100%
             ),
             linear-gradient(to top, rgba(252,251,247,.22) 0%, transparent 20%);
+          overflow: hidden;
+        }
+
+        .h-ik-onkar {
+          position: absolute;
+          z-index: 0;
+          top: 38px;
+          right: clamp(42px, 8vw, 150px);
+          color: rgba(191, 126, 30, 0.24);
+          font-family: 'Raaj___5', 'Noto Sans Gurmukhi', serif;
+          font-size: clamp(105px, 13vw, 93px);
+          font-weight: 400;
+          line-height: 1;
+          pointer-events: none;
+          user-select: none;
+          text-shadow: 0 12px 36px rgba(125, 74, 15, 0.12);
+          animation: h-ik-onkar-breathe 9s ease-in-out infinite;
         }
 
         .h-inner {
@@ -355,21 +402,36 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           color: var(--color-primary);
           margin-bottom: 17px;
           text-transform: uppercase;
+          animation: h-copy-reveal 650ms cubic-bezier(.2,.75,.22,1) 80ms both;
         }
 
         .h-headline {
-          font-family: var(--font-heading);
+          font-family: 'Raaj___5', 'Noto Sans Gurmukhi', var(--font-heading);
           font-size: clamp(43px, 4vw, 56px);
-          font-weight: 700;
+          font-weight: 600;
           color: var(--color-text-primary);
-          line-height: 1.3;
+          line-height: normal;
           margin-bottom: 18px;
           letter-spacing: 0;
+          text-wrap: balance;
+          animation: h-copy-reveal 800ms cubic-bezier(.2,.75,.22,1) 150ms both;
         }
 
         .h-gold {
           color: var(--color-primary-light);
           font-style:normal !important;
+          padding:20px 0px;
+        }
+
+        @supports (-webkit-background-clip: text) {
+          .h-gold {
+            background: linear-gradient(100deg, #af6715 0%, #e5ad54 42%, #b56b15 74%, #e7bc6e 100%);
+            background-size: 190% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: h-gold-shimmer 9s ease-in-out infinite 1.4s;
+          }
         }
 
         .h-sub {
@@ -379,6 +441,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           margin-bottom: 28px;
           max-width: 365px;
           font-weight:500;
+          animation: h-copy-reveal 700ms cubic-bezier(.2,.75,.22,1) 250ms both;
         }
 
         .h-ctas {
@@ -386,6 +449,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           gap: 12px;
           margin-bottom: 28px;
           flex-wrap: wrap;
+          animation: h-copy-reveal 700ms cubic-bezier(.2,.75,.22,1) 340ms both;
         }
 
         .h-promise {
@@ -395,6 +459,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           width: fit-content;
           padding-top: 14px;
           border-top: 1px solid rgba(39, 31, 21, 0.14);
+          animation: h-copy-reveal 700ms cubic-bezier(.2,.75,.22,1) 430ms both;
         }
         .h-promise > span {
           color: var(--color-primary);
@@ -456,6 +521,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           box-shadow: 0 20px 60px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12);
           margin: 0;
           border: 1px solid rgba(202, 154, 77, .18);
+          animation: h-card-arrive 900ms cubic-bezier(.16,.85,.24,1) 380ms both, h-card-float 7s ease-in-out 1.4s infinite;
         }
 
         .h-card-label {
@@ -590,6 +656,7 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           border: 1px solid var(--color-border);
           border-radius: 8px;
           box-shadow: 0 14px 36px rgba(36, 28, 18, 0.11);
+          animation: h-strip-arrive 750ms cubic-bezier(.2,.75,.22,1) 580ms both;
         }
 
         .h-strip-item {
@@ -612,6 +679,48 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           box-shadow: none;
         }
         .h-strip-item:last-child { border-right: 0; }
+
+        @keyframes h-copy-reveal {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes h-card-arrive {
+          from { opacity: 0; transform: translate3d(20px, 22px, 0) scale(.98); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+
+        @keyframes h-card-float {
+          0%, 100% { translate: 0 0; }
+          50% { translate: 0 -5px; }
+        }
+
+        @keyframes h-strip-arrive {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes h-photo-breathe {
+          from { transform: scale(1.025); }
+          to { transform: scale(1.07); }
+        }
+
+        @keyframes h-hero-shine {
+          0%, 24% { transform: translateX(-42%) skewX(-8deg); opacity: 0; }
+          34% { opacity: 1; }
+          58% { transform: translateX(42%) skewX(-8deg); opacity: 0.82; }
+          70%, 100% { transform: translateX(42%) skewX(-8deg); opacity: 0; }
+        }
+
+        @keyframes h-ik-onkar-breathe {
+          0%, 100% { opacity: 0.44; transform: translateY(0) scale(1); }
+          50% { opacity: 0.7; transform: translateY(-7px) scale(1.018); }
+        }
+
+        @keyframes h-gold-shimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
 
         .h-strip-icon {
           display: flex;
@@ -666,6 +775,16 @@ export default function HeroSection({ heroKatha }: HeroSectionProps) {
           .h-headline { font-size: 36px; }
           .h-inner { flex-basis: 542px; padding: 34px 22px 44px; align-items: flex-start; }
           .h-text { max-width: 330px; }
+          .h-ik-onkar { top: 56px; right: -14px; opacity: .58; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .h-section *, .h-section::after {
+            animation-duration: 1ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: 1ms !important;
+          }
         }
       `}</style>
 		</section>

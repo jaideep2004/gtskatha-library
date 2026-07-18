@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import { toast } from 'sonner';
 
 const adminNav = [
@@ -99,6 +102,21 @@ export default function AdminLayout({
   email?: string | null;
 }) {
   const pathname = usePathname();
+  const [dark, setDark] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('admin-theme') === 'dark';
+    return false;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-admin', dark);
+  }, [dark]);
+
+  function toggleDark() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark-admin', next);
+    localStorage.setItem('admin-theme', next ? 'dark' : 'light');
+  }
 
   async function handleLogout() {
     await signOut({ redirect: false });
@@ -157,6 +175,9 @@ export default function AdminLayout({
         <header className="admin-topbar">
           <div><strong>{adminNav.find((item) => item.href === pathname)?.label ?? 'Admin'}</strong><small>Sikh Katha Digital Library</small></div>
           <div className="admin-top-actions">
+            <button onClick={toggleDark} aria-label={dark ? 'Light mode' : 'Dark mode'}>
+              {dark ? <LightModeOutlined fontSize="small" /> : <DarkModeOutlined fontSize="small" />}
+            </button>
             <Link href="/admin/notifications" aria-label="Notifications"><NotificationsNoneOutlined fontSize="small" /></Link>
             <Link href="/" target="_blank">View site</Link>
           </div>
@@ -278,6 +299,53 @@ export default function AdminLayout({
         .admin-user strong,.admin-user small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.admin-user strong{font-size:13px;color:#fff}.admin-user small{font-size:10px;color:rgba(255,255,255,.58);margin-top:3px}.admin-user button{width:36px;height:36px;display:grid;place-items:center;color:rgba(255,255,255,.65)}
         .admin-topbar{height:88px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e5e7eb}
         .admin-topbar strong,.admin-topbar small{display:block}.admin-topbar strong{font-size:20px}.admin-topbar small{font-size:12px;color:#737b87;margin-top:4px}.admin-top-actions{display:flex;align-items:center;gap:10px}.admin-top-actions a{min-height:42px;display:flex;align-items:center;justify-content:center;padding:0 16px;border:1px solid #e1e4e8;border-radius:7px;font-size:13px;color:#263345}.admin-top-actions a:first-child{width:42px;padding:0;border-radius:50%}
+
+        .admin-top-actions button {
+          width: 42px; height: 42px; display: grid; place-items: center;
+          border: 1px solid var(--color-border); border-radius: 50%;
+          background: var(--color-surface); color: var(--color-text-primary);
+          cursor: pointer;
+        }
+        .admin-top-actions button:hover {
+          background: var(--color-bg-secondary);
+        }
+        .dark-admin .admin-wrap { background: #0f172a; }
+        .dark-admin .admin-sidebar { background: #0b1424; }
+        .dark-admin .admin-content { background: #0f172a; }
+        .dark-admin .admin-topbar { background: #1e293b; border-color: #334155; }
+        .dark-admin .admin-topbar strong { color: #f1f5f9; }
+        .dark-admin .admin-topbar small { color: #94a3b8; }
+        .dark-admin .admin-top-actions a,
+        .dark-admin .admin-top-actions button { border-color: #475569; color: #cbd5e1; background: transparent; }
+        .dark-admin .admin-top-actions button:hover { background: rgba(255,255,255,.08); }
+        .dark-admin .dash-stat { background: #1e293b; border-color: #334155; }
+        .dark-admin .dash-stat p { color: #94a3b8; }
+        .dark-admin .dash-stat small { color: #64748b; }
+        .dark-admin .dash-stat strong { color: #f1f5f9; }
+        .dark-admin .dash-stat > span { background: rgba(255,255,255,.06); }
+        .dark-admin .dash-stat.violet > span { background: rgba(115,84,207,.25); }
+        .dark-admin .dash-stat.green > span { background: rgba(22,129,90,.25); }
+        .dark-admin .dash-stat.blue > span { background: rgba(57,116,221,.25); }
+        .dark-admin .dash-stat.red > span { background: rgba(239,68,68,.2); }
+        .dark-admin .dash-panel { background: #1e293b; border-color: #334155; }
+        .dark-admin .dash-panel-head h2 { color: #f1f5f9; }
+        .dark-admin .dash-panel-head a,
+        .dark-admin .dash-panel-head span { color: #94a3b8; }
+        .dark-admin .dash-chart { border-bottom-color: #334155; background: repeating-linear-gradient(to bottom,#1e293b 0,#1e293b 63px,#0f172a 64px); }
+        .dark-admin .dash-chart span { background: #d98c1b; }
+        .dark-admin .dash-katha-list > a > div { background: #0f172a; }
+        .dark-admin .dash-katha-list strong { color: #f1f5f9; }
+        .dark-admin .dash-katha-list small { color: #94a3b8; }
+        .dark-admin .dash-katha-list b { background: rgba(34,197,94,.15); color: #4ade80; }
+        .dark-admin .dash-katha-list b.draft { background: rgba(148,163,184,.15); color: #94a3b8; }
+        .dark-admin .dash-simple-row { border-color: #334155; color: #e2e8f0; }
+        .dark-admin .dash-simple-row span { color: #94a3b8; }
+        .dark-admin .dash-user-row > span { background: rgba(217,140,41,.2); color: #d98c1b; }
+        .dark-admin .dash-user-row strong { color: #f1f5f9; }
+        .dark-admin .dash-user-row small,
+        .dark-admin .dash-user-row time { color: #94a3b8; }
+        .dark-admin .dash-actions a { background: rgba(255,255,255,.05); border-color: #334155; color: #e2e8f0; }
+        .dark-admin .dash-empty { color: #64748b; }
 
         @media (max-width: 768px) {
           .admin-sidebar { transform: translateX(-100%); }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
 import HeadphonesOutlined from '@mui/icons-material/HeadphonesOutlined';
@@ -14,6 +15,8 @@ import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutl
 import BookmarkBorderOutlined from '@mui/icons-material/BookmarkBorderOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 
 const navigation = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardOutlined },
@@ -36,6 +39,21 @@ export default function UserDashboardShell({
   email?: string | null;
 }) {
   const pathname = usePathname();
+  const [dark, setDark] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('dashboard-theme') === 'dark';
+    return false;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-dashboard', dark);
+  }, [dark]);
+
+  function toggleDark() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark-dashboard', next);
+    localStorage.setItem('dashboard-theme', next ? 'dark' : 'light');
+  }
 
   async function handleLogout() {
     await signOut({ redirect: false });
@@ -80,6 +98,9 @@ export default function UserDashboardShell({
             <p>Continue your spiritual journey today.</p>
           </div>
           <div className="user-top-actions">
+            <button onClick={toggleDark} aria-label={dark ? 'Light mode' : 'Dark mode'}>
+              {dark ? <LightModeOutlined fontSize="small" /> : <DarkModeOutlined fontSize="small" />}
+            </button>
             <Link href="/search" aria-label="Search"><CategoryOutlined /></Link>
             <Link href="/dashboard#notifications" aria-label="Notifications"><NotificationsNoneOutlined /></Link>
             <Link href="/profile/favorites" aria-label="Profile"><PersonOutlined /></Link>
@@ -142,8 +163,53 @@ export default function UserDashboardShell({
           .user-topbar{position:sticky;top:0;z-index:50;padding:14px 15px;min-height:76px;box-shadow:0 5px 18px rgba(20,30,45,.05)}
           .user-topbar h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
           .user-topbar p{font-size:11px}.user-top-actions{gap:5px}.user-top-actions a{width:38px;height:38px}
-          .user-top-actions a:first-child,.user-top-actions a:nth-child(2){display:none}
+        .user-top-actions a:first-child,.user-top-actions a:nth-child(2){display:none}
+          }
         }
+        .user-top-actions button {
+          width: 44px; height: 44px; display: grid; place-items: center;
+          border: 1px solid #e6e4dd; border-radius: 50%; color: #263345;
+          background: transparent; cursor: pointer;
+        }
+        .user-top-actions button:hover { background: #f5f2eb; }
+        .dark-dashboard .user-app { background: #0f172a; color: #e2e8f0; }
+        .dark-dashboard .user-sidebar { background: #0b1424; }
+        .dark-dashboard .user-main { background: #0f172a; }
+        .dark-dashboard .user-topbar { background: #1e293b; border-color: #334155; }
+        .dark-dashboard .user-topbar h1 { color: #f1f5f9; }
+        .dark-dashboard .user-topbar p { color: #94a3b8; }
+        .dark-dashboard .user-top-actions a,
+        .dark-dashboard .user-top-actions button { border-color: #475569; color: #cbd5e1; }
+        .dark-dashboard .user-top-actions button:hover { background: rgba(255,255,255,.08); }
+        .dark-dashboard .ud-stat { background: #1e293b; border-color: #334155; }
+        .dark-dashboard .ud-stat p { color: #94a3b8; }
+        .dark-dashboard .ud-stat small { color: #64748b; }
+        .dark-dashboard .ud-stat strong { color: #f1f5f9; }
+        .dark-dashboard .ud-stat-icon { background: rgba(255,255,255,.06); }
+        .dark-dashboard .ud-stat.violet .ud-stat-icon { background: rgba(115,84,207,.25); }
+        .dark-dashboard .ud-stat.green .ud-stat-icon { background: rgba(22,129,90,.25); }
+        .dark-dashboard .ud-stat.blue .ud-stat-icon { background: rgba(57,116,221,.25); }
+        .dark-dashboard .ud-panel { background: #1e293b; border-color: #334155; }
+        .dark-dashboard .ud-panel-head h2 { color: #f1f5f9; }
+        .dark-dashboard .ud-panel-head a,
+        .dark-dashboard .ud-panel-head span { color: #94a3b8; }
+        .dark-dashboard .ud-progress-item { background: rgba(255,255,255,.05); }
+        .dark-dashboard .ud-progress-thumb { background: #0f172a; }
+        .dark-dashboard .ud-progress-copy strong { color: #f1f5f9; }
+        .dark-dashboard .ud-progress-copy small { color: #94a3b8; }
+        .dark-dashboard .ud-progress-track { background: #334155; }
+        .dark-dashboard .ud-round-play { border-color: #475569; color: #e2e8f0; }
+        .dark-dashboard .ud-recent-item > div { background: #0f172a; }
+        .dark-dashboard .ud-recent-item strong { color: #f1f5f9; }
+        .dark-dashboard .ud-recent-item small { color: #94a3b8; }
+        .dark-dashboard .ud-series-grid a > div { background: #0f172a; }
+        .dark-dashboard .ud-series-grid strong { color: #e2e8f0; }
+        .dark-dashboard .ud-category-list a > span { background: rgba(217,140,41,.2); color: #d98c1b; }
+        .dark-dashboard .ud-category-list strong { color: #e2e8f0; }
+        .dark-dashboard .ud-notification-list button { border-color: #334155; }
+        .dark-dashboard .ud-notification-list strong { color: #f1f5f9; }
+        .dark-dashboard .ud-notification-list p { color: #94a3b8; }
+        .dark-dashboard .ud-empty { color: #64748b; }
       `}</style>
     </div>
   );

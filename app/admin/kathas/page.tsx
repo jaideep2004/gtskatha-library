@@ -85,9 +85,13 @@ const empty: FormState = {
   chapters: [],
 };
 
+const PAGE_SIZE = 20;
+
 export default function KathasAdminPage() {
   const [kathas, setKathas] = useState<Katha[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -101,12 +105,21 @@ export default function KathasAdminPage() {
   const [videoUploading, setVideoUploading] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const mediaUploading = audioUploading || videoUploading || thumbnailUploading;
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkArchiving, setBulkArchiving] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
 
   const loadKathas = useCallback(async () => {
     setLoading(true);
     try {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        sort: 'newest',
+        page: String(page),
+      });
+      if (statusFilter) params.set('status', statusFilter);
       const [kathaRes, categoryRes, seriesRes] = await Promise.all([
-        fetch('/api/kathas?limit=50&sort=newest'),
+        fetch(`/api/kathas?${params.toString()}`),
         fetch('/api/categories'),
         fetch('/api/series'),
       ]);
@@ -118,6 +131,8 @@ export default function KathasAdminPage() {
       if (data.success) {
         setKathas(data.data);
         setTotal(data.total);
+        setTotalPages(data.totalPages);
+        setSelectedIds(new Set());
       }
       if (categoryData.success) setCategories(categoryData.data);
       if (seriesData.success) setSeriesOptions(seriesData.data);
@@ -126,7 +141,7 @@ export default function KathasAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, statusFilter]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch on mount
   useEffect(() => { void loadKathas(); }, [loadKathas]);
@@ -287,6 +302,48 @@ export default function KathasAdminPage() {
     return categories.find((category) => category._id === katha.categoryId)?.name ?? '—';
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === kathas.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(kathas.map((k) => k._id)));
+    }
+  }
+
+  async function handleBulkArchive() {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Archive ${selectedIds.size} katha(s)? They can be restored later from the archive.`)) return;
+    setBulkArchiving(true);
+    try {
+      const res = await fetch('/api/kathas/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setSelectedIds(new Set());
+        loadKathas();
+      } else {
+        toast.error(data.error ?? 'Bulk archive failed.');
+      }
+    } catch {
+      toast.error('Bulk archive failed.');
+    } finally {
+      setBulkArchiving(false);
+    }
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -294,15 +351,27 @@ export default function KathasAdminPage() {
           <h1 className="admin-page-title">Kathas</h1>
           <p className="admin-page-sub">{total} total kathas</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openNew}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add Katha
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setShowBulkUpload((visible) => !visible)}>
-          {showBulkUpload ? 'Close Bulk Upload' : 'Bulk Upload Audio'}
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          <select
+            className="input"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            style={{ width: 140 }}
+          >
+            <option value="">All status</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowBulkUpload((visible) => !visible)}>
+            {showBulkUpload ? 'Close Bulk Upload' : 'Bulk Upload Audio'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={openNew}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add Katha
+          </button>
+        </div>
       </div>
 
       {showBulkUpload && (
@@ -615,71 +684,139 @@ export default function KathasAdminPage() {
           Loading kathas...
         </div>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Artwork</th>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Duration</th>
-                <th>Views</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {kathas.length === 0 ? (
+        <>
+          {selectedIds.size > 0 && (
+            <div className="bulk-bar">
+              <span className="bulk-count">{selectedIds.size} selected</span>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--color-error)' }}
+                disabled={bulkArchiving}
+                onClick={handleBulkArchive}
+              >
+                {bulkArchiving ? 'Archiving…' : 'Archive Selected'}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
+                Clear selection
+              </button>
+            </div>
+          )}
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
-                    No kathas yet. Add your first one!
-                  </td>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={kathas.length > 0 && selectedIds.size === kathas.length}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th>Artwork</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Duration</th>
+                  <th>Views</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
-              ) : kathas.map((k) => (
-                <tr key={k._id}>
-                  <td>
-                    <AdminThumbnail folder="thumbnails" value={k.thumbnail} alt={`${k.title} thumbnail`} />
-                  </td>
-                  <td>
-                    <div className="admin-table-title">{k.title}</div>
-                    {k.featured && <span className="badge badge-primary" style={{ fontSize: 10 }}>Featured</span>}
-                  </td>
-                  <td>
-                    <span className={`badge badge-${k.type}`}>{k.type}</span>
-                  </td>
-                  <td><span className="category-cell">{getCategoryName(k)}</span></td>
-                  <td>{k.duration ? formatDuration(k.duration) : '—'}</td>
-                  <td>{k.views.toLocaleString()}</td>
-                  <td>
-                    <button
-                      className={k.status === 'archived' ? 'status-draft' : k.published ? 'status-published' : 'status-draft'}
-                      onClick={() => togglePublish(k.slug, k.published)}
-                      style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-                      title={k.published ? 'Click to unpublish' : 'Click to publish'}
-                    >
-                      {k.status === 'archived' ? 'Archived' : k.published ? 'Published' : 'Draft'}
-                    </button>
-                  </td>
-                  <td>{formatDate(new Date(k.createdAt))}</td>
-                  <td>
-                    <div className="admin-table-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(k)}>Edit</button>
+              </thead>
+              <tbody>
+                {kathas.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
+                      No kathas yet. Add your first one!
+                    </td>
+                  </tr>
+                ) : kathas.map((k) => (
+                  <tr key={k._id} className={selectedIds.has(k._id) ? 'row-selected' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(k._id)}
+                        onChange={() => toggleSelect(k._id)}
+                        aria-label={`Select ${k.title}`}
+                      />
+                    </td>
+                    <td>
+                      <AdminThumbnail folder="thumbnails" value={k.thumbnail} alt={`${k.title} thumbnail`} />
+                    </td>
+                    <td>
+                      <div className="admin-table-title">{k.title}</div>
+                      {k.featured && <span className="badge badge-primary" style={{ fontSize: 10 }}>Featured</span>}
+                    </td>
+                    <td>
+                      <span className={`badge badge-${k.type}`}>{k.type}</span>
+                    </td>
+                    <td><span className="category-cell">{getCategoryName(k)}</span></td>
+                    <td>{k.duration ? formatDuration(k.duration) : '—'}</td>
+                    <td>{k.views.toLocaleString()}</td>
+                    <td>
                       <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: 'var(--color-error)' }}
-                        onClick={() => handleDelete(k.slug, k.title)}
+                        className={k.status === 'archived' ? 'status-draft' : k.published ? 'status-published' : 'status-draft'}
+                        onClick={() => togglePublish(k.slug, k.published)}
+                        style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        title={k.published ? 'Click to unpublish' : 'Click to publish'}
                       >
-                        Archive
+                        {k.status === 'archived' ? 'Archived' : k.published ? 'Published' : 'Draft'}
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                    <td>{formatDate(new Date(k.createdAt))}</td>
+                    <td>
+                      <div className="admin-table-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(k)}>Edit</button>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--color-error)' }}
+                          onClick={() => handleDelete(k.slug, k.title)}
+                        >
+                          Archive
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="pagination-bar">
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ← Previous
+              </button>
+              <div className="pagination-pages">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                  .map((p, idx, arr) => (
+                    <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                      {idx > 0 && arr[idx - 1] !== p - 1 && <span className="pagination-ellipsis">…</span>}
+                      <button
+                        className={`pagination-btn ${p === page ? 'pagination-active' : ''}`}
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </button>
+                    </span>
+                  ))}
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <style>{`
@@ -736,6 +873,7 @@ export default function KathasAdminPage() {
         }
         .admin-table tr:last-child td { border-bottom: none; }
         .admin-table tr:hover td { background: var(--color-bg); }
+        .row-selected td { background: var(--color-primary-alpha); }
         .admin-table-title { font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
         .category-cell { color: var(--color-text-secondary); font-size: 13px; }
         .admin-table-actions { display: flex; gap: var(--space-1); }
@@ -757,6 +895,33 @@ export default function KathasAdminPage() {
         .chapter-remove { width: 36px; height: 36px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-error); cursor: pointer; font-size: 20px; }
         .chapter-remove:hover { border-color: var(--color-error); background: rgba(239,68,68,0.06); }
         .chapter-empty { padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: var(--font-size-sm); }
+        .bulk-bar {
+          display: flex; align-items: center; gap: var(--space-3);
+          padding: var(--space-3) var(--space-5);
+          background: var(--color-primary-alpha);
+          border: 1px solid var(--color-primary-light);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-4);
+        }
+        .bulk-count { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-primary-dark); }
+        .pagination-bar {
+          display: flex; align-items: center; justify-content: center;
+          gap: var(--space-3); margin-top: var(--space-6);
+        }
+        .pagination-pages { display: flex; align-items: center; gap: 2px; }
+        .pagination-btn {
+          width: 36px; height: 36px; display: grid; place-items: center;
+          border: 1px solid var(--color-border); border-radius: var(--radius-md);
+          background: var(--color-surface); color: var(--color-text-primary);
+          font-size: var(--font-size-sm); cursor: pointer;
+        }
+        .pagination-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .pagination-active {
+          background: var(--color-primary); color: white;
+          border-color: var(--color-primary); font-weight: 600;
+        }
+        .pagination-active:hover { color: white; }
+        .pagination-ellipsis { color: var(--color-text-muted); padding: 0 2px; font-size: var(--font-size-sm); }
         @media (max-width: 760px) {
           .chapter-row { grid-template-columns: 28px 1fr 36px; }
           .chapter-time { grid-column: span 1; }
@@ -765,6 +930,7 @@ export default function KathasAdminPage() {
         @media (max-width: 640px) {
           .admin-form-grid { grid-template-columns: 1fr; }
           .admin-page { padding: var(--space-4); }
+          .pagination-bar { flex-wrap: wrap; }
         }
       `}</style>
     </div>

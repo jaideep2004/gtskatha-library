@@ -3,7 +3,12 @@ import { requireAdmin } from '@/lib/apiAuth';
 import { ADMIN_MUTATION_LIMIT, enforceRateLimit } from '@/lib/rateLimit';
 import { DomainError } from '@/lib/domainError';
 import { ValidationError, validateKathaInput } from '@/lib/validation';
-import { createBulkAudioKathas, type BulkAudioKathaInput } from '@/services/kathaService';
+import {
+  createBulkAudioKathas,
+  bulkArchiveKathas,
+  bulkHardDeleteKathas,
+  type BulkAudioKathaInput,
+} from '@/services/kathaService';
 import { recordAudit } from '@/services/auditService';
 
 const MAX_BATCH_SIZE = 20;
@@ -11,6 +16,76 @@ const MAX_BATCH_SIZE = 20;
 interface RequestItem {
   clientId?: unknown;
   [key: string]: unknown;
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await requireAdmin();
+    if (!auth.authorized) return auth.response;
+    const limited = enforceRateLimit(req, ADMIN_MUTATION_LIMIT);
+    if (limited) return limited;
+
+    const { ids } = await req.json() as { ids?: string[] };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ success: false, error: 'ids array is required' }, { status: 400 });
+    }
+
+    const result = await bulkArchiveKathas(ids);
+
+    await recordAudit({
+      actorId: auth.session.user.id,
+      action: 'katha.bulk_archive',
+      entityType: 'Katha',
+      metadata: { ids, count: result.modifiedCount },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `${result.modifiedCount} katha(s) archived`,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    console.error('PATCH /api/kathas/bulk', error);
+    return NextResponse.json({ success: false, error: 'Failed to archive kathas' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await requireAdmin();
+    if (!auth.authorized) return auth.response;
+    const limited = enforceRateLimit(req, ADMIN_MUTATION_LIMIT);
+    if (limited) return limited;
+
+    const { ids } = await req.json() as { ids?: string[] };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ success: false, error: 'ids array is required' }, { status: 400 });
+    }
+
+    const result = await bulkHardDeleteKathas(ids);
+
+    await recordAudit({
+      actorId: auth.session.user.id,
+      action: 'katha.bulk_hard_delete',
+      entityType: 'Katha',
+      metadata: { ids, count: result.deletedCount },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `${result.deletedCount} katha(s) permanently deleted`,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    console.error('DELETE /api/kathas/bulk', error);
+    return NextResponse.json({ success: false, error: 'Failed to delete kathas' }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

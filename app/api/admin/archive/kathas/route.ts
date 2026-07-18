@@ -5,6 +5,7 @@ import {
   getArchivedKathas,
   hardDeleteArchivedKatha,
   restoreArchivedKatha,
+  bulkRestoreArchivedKathas,
 } from '@/services/kathaService';
 import { DomainError } from '@/lib/domainError';
 import { recordAudit } from '@/services/auditService';
@@ -36,12 +37,28 @@ export async function PATCH(req: NextRequest) {
     const limited = enforceRateLimit(req, ADMIN_MUTATION_LIMIT);
     if (limited) return limited;
 
-    const { id } = await req.json() as { id?: string };
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Katha id is required' }, { status: 400 });
+    const body = await req.json() as { id?: string; ids?: string[] };
+
+    if (body.ids) {
+      const result = await bulkRestoreArchivedKathas(body.ids);
+      await recordAudit({
+        actorId: auth.session.user.id,
+        action: 'katha.bulk_restore',
+        entityType: 'Katha',
+        metadata: { ids: body.ids, count: result.modifiedCount },
+      });
+      return NextResponse.json({
+        success: true,
+        message: `${result.modifiedCount} katha(s) restored as draft`,
+        data: result,
+      });
     }
 
-    const restored = await restoreArchivedKatha(id);
+    if (!body.id) {
+      return NextResponse.json({ success: false, error: 'Katha id or ids array is required' }, { status: 400 });
+    }
+
+    const restored = await restoreArchivedKatha(body.id);
     if (!restored) {
       return NextResponse.json({ success: false, error: 'Archived katha not found' }, { status: 404 });
     }

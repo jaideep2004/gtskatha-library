@@ -338,6 +338,24 @@ export async function restoreArchivedKatha(id: string) {
   );
 }
 
+export async function bulkRestoreArchivedKathas(ids: string[]) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const result = await Katha.updateMany(
+    { _id: { $in: objectIds }, status: 'archived' },
+    {
+      $set: { status: 'draft', published: false },
+      $unset: { archivedAt: 1 },
+    }
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
 export async function hardDeleteArchivedKatha(id: string) {
   await connectDB();
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -405,6 +423,59 @@ function assertMediaRequirements(data: Record<string, unknown>) {
   if (!data.thumbnail) {
     throw new DomainError('Published katha requires a thumbnail', 400);
   }
+}
+
+export async function bulkArchiveKathas(ids: string[]) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const result = await Katha.updateMany(
+    { _id: { $in: objectIds }, status: { $ne: 'archived' } },
+    { $set: { status: 'archived', published: false, archivedAt: new Date() } }
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+export async function bulkHardDeleteKathas(ids: string[]) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const kathas = await Katha.find({ _id: { $in: objectIds }, status: 'archived' });
+  const kathaIds = kathas.map((k) => k._id);
+
+  if (kathaIds.length === 0) return { deletedCount: 0 };
+
+  await Promise.all(
+    kathas.map((katha) =>
+      Promise.all([
+        deleteMediaIfPresent(katha.audioUrl, 'audio'),
+        deleteMediaIfPresent(katha.videoUrl, 'video'),
+        deleteMediaIfPresent(katha.thumbnail, 'thumbnails'),
+      ])
+    )
+  );
+
+  await Promise.all([
+    HomepageConfig.updateMany({ heroKatha: { $in: kathaIds } }, { $unset: { heroKatha: 1 } }),
+    HomepageConfig.updateMany({ featuredKatha: { $in: kathaIds } }, { $unset: { featuredKatha: 1 } }),
+    Favorite.deleteMany({ kathaId: { $in: kathaIds } }),
+    ContinueListening.deleteMany({ kathaId: { $in: kathaIds } }),
+    KathaLike.deleteMany({ kathaId: { $in: kathaIds } }),
+    KathaNote.deleteMany({ kathaId: { $in: kathaIds } }),
+    KathaViewEvent.deleteMany({ kathaId: { $in: kathaIds } }),
+    TimelineComment.deleteMany({ kathaId: { $in: kathaIds } }),
+  ]);
+
+  const result = await Katha.deleteMany({ _id: { $in: kathaIds }, status: 'archived' });
+
+  return { deletedCount: result.deletedCount };
 }
 
 async function reserveKathaSlug(title: string, reservedSlugs: Set<string>) {

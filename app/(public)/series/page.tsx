@@ -18,7 +18,7 @@ export default async function SeriesPage({ searchParams }: Props) {
   const params = await searchParams;
   const [rawSeries, episodeCounts] = await Promise.all([
     getAllSeries(false),
-    getSeriesEpisodeCounts(),
+    getSeriesEpisodeCounts().catch(() => ({}) as Record<string, number>),
   ]);
   let series = serializeForClient(rawSeries) as unknown as ISeries[];
   const q = params.q?.trim().toLocaleLowerCase();

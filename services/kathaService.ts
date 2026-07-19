@@ -34,6 +34,7 @@ export interface BulkAudioKathaInput {
   keyTakeaways?: string[];
   references?: string[];
   chapters?: Array<{ id: string; title: string; startTime: number; duration: number }>;
+  sortOrder?: number;
 }
 
 function publicKathaQuery(): Record<string, unknown> {
@@ -118,6 +119,7 @@ export async function getKathas(params: KathaSearchParams = {}) {
     oldest: [['createdAt', 1]],
     popular: [['views', -1]],
     featured: [['featured', -1], ['createdAt', -1]],
+    manual: [['sortOrder', 1], ['createdAt', -1]],
   };
 
   const skip = (safePage - 1) * safeLimit;
@@ -423,6 +425,37 @@ function assertMediaRequirements(data: Record<string, unknown>) {
   if (!data.thumbnail) {
     throw new DomainError('Published katha requires a thumbnail', 400);
   }
+}
+
+export async function bulkSetThumbnail(ids: string[], thumbnail: string) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const result = await Katha.updateMany(
+    { _id: { $in: objectIds } },
+    { $set: { thumbnail } }
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+export async function reorderKathas(ids: string[]) {
+  await connectDB();
+  const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (validIds.length !== ids.length) throw new DomainError('Invalid katha id in reorder request', 400);
+
+  const ops = validIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: new mongoose.Types.ObjectId(id) },
+      update: { $set: { sortOrder: index } },
+    },
+  }));
+
+  await Katha.bulkWrite(ops);
+  return { reordered: validIds.length };
 }
 
 export async function bulkArchiveKathas(ids: string[]) {

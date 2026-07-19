@@ -108,13 +108,20 @@ export default function KathasAdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkArchiving, setBulkArchiving] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('admin_katha_sort') || 'newest');
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderIds, setReorderIds] = useState<string[]>([]);
+  const [reorderSaving, setReorderSaving] = useState(false);
+  const [bulkArtworkFile, setBulkArtworkFile] = useState('');
+  const [bulkArtworkUploading, setBulkArtworkUploading] = useState(false);
+  const [bulkArtworkSaving, setBulkArtworkSaving] = useState(false);
 
   const loadKathas = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
-        sort: 'newest',
+        sort: sortBy,
         page: String(page),
       });
       if (statusFilter) params.set('status', statusFilter);
@@ -141,7 +148,7 @@ export default function KathasAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, sortBy]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch on mount
   useEffect(() => { void loadKathas(); }, [loadKathas]);
@@ -356,14 +363,35 @@ export default function KathasAdminPage() {
             className="input"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            style={{ width: 140 }}
+            style={{ width: 130 }}
           >
             <option value="">All status</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
+          <select
+            className="input"
+            value={sortBy}
+            onChange={(e) => { localStorage.setItem('admin_katha_sort', e.target.value); setSortBy(e.target.value); setPage(1); }}
+            style={{ width: 130 }}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="popular">Most popular</option>
+            <option value="featured">Featured first</option>
+            <option value="manual">Manual order</option>
+          </select>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowBulkUpload((visible) => !visible)}>
             {showBulkUpload ? 'Close Bulk Upload' : 'Bulk Upload Audio'}
+          </button>
+          <button
+            className={`btn btn-sm ${reorderMode ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              if (!reorderMode) setReorderIds(kathas.map((k) => k._id));
+              setReorderMode((v) => !v);
+            }}
+          >
+            {reorderMode ? 'Done Reordering' : 'Reorder'}
           </button>
           <button className="btn btn-primary btn-sm" onClick={openNew}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -688,6 +716,71 @@ export default function KathasAdminPage() {
           {selectedIds.size > 0 && (
             <div className="bulk-bar">
               <span className="bulk-count">{selectedIds.size} selected</span>
+              {!bulkArtworkFile && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={bulkArtworkUploading}
+                  onClick={() => setBulkArtworkFile('__pending__')}
+                >
+                  Set Artwork
+                </button>
+              )}
+              {bulkArtworkFile === '__pending__' && (
+                <div className="bulk-artwork-inline">
+                  <FileUpload
+                    key="bulk-artwork"
+                    folder="thumbnails"
+                    label=""
+                    accept="image/*"
+                    hint="JPG, PNG, WebP — max 20 MB"
+                    currentFile=""
+                    onUploaded={(filename) => {
+                      setBulkArtworkFile(filename);
+                    }}
+                    onUploadingChange={setBulkArtworkUploading}
+                  />
+                </div>
+              )}
+              {bulkArtworkFile && bulkArtworkFile !== '__pending__' && (
+                <div className="bulk-artwork-inline">
+                  <span className="bulk-artwork-name">{bulkArtworkFile}</span>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={bulkArtworkSaving}
+                    onClick={async () => {
+                      setBulkArtworkSaving(true);
+                      try {
+                        const res = await fetch('/api/kathas/bulk', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            ids: Array.from(selectedIds),
+                            thumbnail: bulkArtworkFile,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          toast.success(data.message);
+                          setBulkArtworkFile('');
+                          setSelectedIds(new Set());
+                          loadKathas();
+                        } else {
+                          toast.error(data.error ?? 'Failed to set artwork.');
+                        }
+                      } catch {
+                        toast.error('Failed to set artwork.');
+                      } finally {
+                        setBulkArtworkSaving(false);
+                      }
+                    }}
+                  >
+                    {bulkArtworkSaving ? 'Saving…' : 'Apply Artwork'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setBulkArtworkFile('')}>
+                    Cancel
+                  </button>
+                </div>
+              )}
               <button
                 className="btn btn-ghost btn-sm"
                 style={{ color: 'var(--color-error)' }}
@@ -701,18 +794,62 @@ export default function KathasAdminPage() {
               </button>
             </div>
           )}
+          {reorderMode && (
+            <div className="reorder-bar">
+              <span>Drag rows to reorder. {reorderIds.length} items.</span>
+              <div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={reorderSaving}
+                  onClick={async () => {
+                    setReorderSaving(true);
+                    try {
+                      const res = await fetch('/api/kathas/reorder', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: reorderIds }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        toast.success('Order saved.');
+                        setReorderMode(false);
+                        localStorage.setItem('admin_katha_sort', 'manual');
+                        setSortBy('manual');
+                        setPage(1);
+                      } else {
+                        toast.error(data.error ?? 'Reorder failed.');
+                      }
+                    } catch {
+                      toast.error('Reorder failed.');
+                    } finally {
+                      setReorderSaving(false);
+                    }
+                  }}
+                >
+                  {reorderSaving ? 'Saving…' : 'Save Order'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setReorderMode(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>
-                    <input
-                      type="checkbox"
-                      checked={kathas.length > 0 && selectedIds.size === kathas.length}
-                      onChange={toggleSelectAll}
-                      aria-label="Select all"
-                    />
-                  </th>
+                  {reorderMode && <th style={{ width: 32 }}></th>}
+                  {!reorderMode && (
+                    <th style={{ width: 40 }}>
+                      <input
+                        type="checkbox"
+                        checked={kathas.length > 0 && selectedIds.size === kathas.length}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </th>
+                  )}
+                  <th style={{ width: 32 }}>#</th>
                   <th>Artwork</th>
                   <th>Title</th>
                   <th>Type</th>
@@ -721,18 +858,69 @@ export default function KathasAdminPage() {
                   <th>Views</th>
                   <th>Status</th>
                   <th>Date</th>
-                  <th>Actions</th>
+                  {!reorderMode && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {kathas.length === 0 ? (
                   <tr>
-                    <td colSpan={10} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
+                    <td colSpan={reorderMode ? 10 : 11} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
                       No kathas yet. Add your first one!
                     </td>
                   </tr>
-                ) : kathas.map((k) => (
-                  <tr key={k._id} className={selectedIds.has(k._id) ? 'row-selected' : ''}>
+                ) : (reorderMode ? reorderIds
+                  .map((id) => kathas.find((k) => k._id === id))
+                  .filter(Boolean)
+                  .map((k, idx) => (
+                  <tr
+                    key={k!._id}
+                    className="reorder-row"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', k!._id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      (e.currentTarget as HTMLElement).classList.add('dragging');
+                    }}
+                    onDragEnd={(e) => {
+                      (e.currentTarget as HTMLElement).classList.remove('dragging');
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData('text/plain');
+                      if (!fromId || fromId === k!._id) return;
+                      setReorderIds((prev) => {
+                        const fromIdx = prev.indexOf(fromId);
+                        const toIdx = prev.indexOf(k!._id);
+                        if (fromIdx === -1 || toIdx === -1) return prev;
+                        const next = [...prev];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        return next;
+                      });
+                    }}
+                  >
+                    <td className="reorder-handle-cell">
+                      <span className="reorder-handle">⠿</span>
+                    </td>
+                    <td className="order-index">{idx + 1}</td>
+                    <td><AdminThumbnail folder="thumbnails" value={k!.thumbnail} alt={`${k!.title} thumbnail`} /></td>
+                    <td><div className="admin-table-title">{k!.title}</div>{k!.featured && <span className="badge badge-primary" style={{ fontSize: 10 }}>Featured</span>}</td>
+                    <td><span className={`badge badge-${k!.type}`}>{k!.type}</span></td>
+                    <td><span className="category-cell">{getCategoryName(k!)}</span></td>
+                    <td>{k!.duration ? formatDuration(k!.duration) : '—'}</td>
+                    <td>{k!.views.toLocaleString()}</td>
+                    <td><button className={k!.published ? 'status-published' : 'status-draft'} style={{ cursor: 'default', background: 'none', border: 'none', padding: 0 }}>{k!.published ? 'Published' : 'Draft'}</button></td>
+                    <td>{formatDate(new Date(k!.createdAt))}</td>
+                  </tr>
+                  )) : kathas.map((k, idx) => (
+                  <tr
+                    key={k._id}
+                    className={selectedIds.has(k._id) ? 'row-selected' : ''}
+                  >
                     <td>
                       <input
                         type="checkbox"
@@ -741,6 +929,7 @@ export default function KathasAdminPage() {
                         aria-label={`Select ${k.title}`}
                       />
                     </td>
+                    <td className="order-index">{idx + 1}</td>
                     <td>
                       <AdminThumbnail folder="thumbnails" value={k.thumbnail} alt={`${k.title} thumbnail`} />
                     </td>
@@ -765,20 +954,22 @@ export default function KathasAdminPage() {
                       </button>
                     </td>
                     <td>{formatDate(new Date(k.createdAt))}</td>
-                    <td>
-                      <div className="admin-table-actions">
-                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(k)}>Edit</button>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          style={{ color: 'var(--color-error)' }}
-                          onClick={() => handleDelete(k.slug, k.title)}
-                        >
-                          Archive
-                        </button>
-                      </div>
-                    </td>
+                    {!reorderMode && (
+                      <td>
+                        <div className="admin-table-actions">
+                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(k)}>Edit</button>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--color-error)' }}
+                            onClick={() => handleDelete(k.slug, k.title)}
+                          >
+                            Archive
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -877,6 +1068,22 @@ export default function KathasAdminPage() {
         .admin-table-title { font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
         .category-cell { color: var(--color-text-secondary); font-size: 13px; }
         .admin-table-actions { display: flex; gap: var(--space-1); }
+        .order-index { color: var(--color-text-muted); font-size: 12px; font-weight: 500; text-align: center; }
+        .reorder-row { cursor: grab; }
+        .reorder-row.dragging { opacity: 0.3; }
+        .reorder-row:hover { background: var(--color-primary-alpha) !important; }
+        .reorder-handle-cell { cursor: grab; text-align: center; }
+        .reorder-handle { font-size: 18px; color: var(--color-text-muted); user-select: none; line-height: 1; }
+        .reorder-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: var(--space-3) var(--space-5);
+          background: var(--color-primary-alpha);
+          border: 1px solid var(--color-primary-light);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-4);
+          font-size: var(--font-size-sm); color: var(--color-primary-dark);
+        }
+        .reorder-bar > div { display: flex; gap: var(--space-3); }
         .status-published {
           color: var(--color-success); background: var(--color-success-bg);
           padding: 2px 8px; border-radius: var(--radius-full);
@@ -902,8 +1109,13 @@ export default function KathasAdminPage() {
           border: 1px solid var(--color-primary-light);
           border-radius: var(--radius-lg);
           margin-bottom: var(--space-4);
+          flex-wrap: wrap;
         }
         .bulk-count { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-primary-dark); }
+        .bulk-artwork-inline { display: flex; align-items: center; gap: var(--space-3); }
+        .bulk-artwork-inline .file-upload-wrap { flex-direction: row; }
+        .bulk-artwork-inline .file-upload-area { min-height: 36px; padding: 4px 12px; }
+        .bulk-artwork-name { font-size: var(--font-size-xs); color: var(--color-primary-dark); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pagination-bar {
           display: flex; align-items: center; justify-content: center;
           gap: var(--space-3); margin-top: var(--space-6);

@@ -57,6 +57,7 @@ export interface IKatha {
   allowDownload?: boolean;
   archivedAt?: Date;
   views: number;
+  sortOrder: number;
   createdAt: Date;
   authorName?: string;
   chapters?: Chapter[];
@@ -149,7 +150,7 @@ export interface KathaSearchParams {
   series?: string;
   page?: number;
   limit?: number;
-  sort?: 'newest' | 'oldest' | 'popular' | 'featured';
+  sort?: 'newest' | 'oldest' | 'popular' | 'featured' | 'manual';
   includeUnpublished?: boolean;
 }
 

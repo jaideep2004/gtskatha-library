@@ -209,7 +209,7 @@ export default function BulkAudioKathaUpload({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        items: ready.map((draft) => ({
+        items: ready.map((draft, idx) => ({
           clientId: draft.id,
           title: draft.title,
           type: 'audio',
@@ -221,6 +221,7 @@ export default function BulkAudioKathaUpload({
           tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
           published: publish,
           allowDownload,
+          sortOrder: idx,
         })),
       }),
     });
@@ -350,7 +351,38 @@ export default function BulkAudioKathaUpload({
 
           <div className="bulk-katha-list">
             {drafts.map((draft, index) => (
-              <article className={`bulk-katha-row is-${draft.status}`} key={draft.id}>
+              <article
+                className={`bulk-katha-row is-${draft.status}`}
+                key={draft.id}
+                draggable={!running && draft.status !== 'created'}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', draft.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  (e.currentTarget as HTMLElement).classList.add('dragging');
+                }}
+                onDragEnd={(e) => {
+                  (e.currentTarget as HTMLElement).classList.remove('dragging');
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const fromId = e.dataTransfer.getData('text/plain');
+                  if (!fromId || fromId === draft.id) return;
+                  setDrafts((current) => {
+                    const fromIdx = current.findIndex((d) => d.id === fromId);
+                    const toIdx = current.findIndex((d) => d.id === draft.id);
+                    if (fromIdx === -1 || toIdx === -1) return current;
+                    const next = [...current];
+                    const [moved] = next.splice(fromIdx, 1);
+                    next.splice(toIdx, 0, moved);
+                    return next;
+                  });
+                }}
+              >
+                <span className="bulk-katha-drag-handle" aria-label="Drag to reorder">⠿</span>
                 <span className="bulk-katha-index">{String(index + 1).padStart(2, '0')}</span>
                 <div className="bulk-katha-file"><strong>{draft.audioFile.name}</strong><small>Batch {Math.floor(index / MAX_BATCH_SIZE) + 1} · {Math.round(draft.audioFile.size / 1024 / 1024)} MB</small></div>
                 <label className="bulk-katha-title-input"><span>Title</span><input value={draft.title} disabled={running || draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { title: event.target.value })} /></label>
@@ -389,9 +421,12 @@ export default function BulkAudioKathaUpload({
         .bulk-katha-check { display: flex !important; align-items: center; gap: 8px; padding-top: 20px; }
         .bulk-katha-check input { min-width: auto !important; }
         .bulk-katha-list { display: grid; gap: 8px; max-height: 520px; overflow: auto; }
-        .bulk-katha-row { display: grid; grid-template-columns: 34px minmax(150px, 1.2fr) minmax(180px, 1fr) minmax(140px, .9fr) minmax(94px, .7fr) 30px; gap: var(--space-3); align-items: end; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); content-visibility: auto; contain-intrinsic-size: 74px; }
+        .bulk-katha-row { display: grid; grid-template-columns: 24px 34px minmax(150px, 1.2fr) minmax(180px, 1fr) minmax(140px, .9fr) minmax(94px, .7fr) 30px; gap: var(--space-3); align-items: end; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); content-visibility: auto; contain-intrinsic-size: 74px; }
+        .bulk-katha-row.dragging { opacity: 0.4; }
         .bulk-katha-row.is-created { border-color: color-mix(in srgb, var(--color-success) 55%, var(--color-border)); }
         .bulk-katha-row.is-failed { border-color: color-mix(in srgb, var(--color-error) 55%, var(--color-border)); }
+        .bulk-katha-drag-handle { align-self: center; cursor: grab; color: var(--color-text-muted); font-size: 16px; user-select: none; line-height: 1; }
+        .bulk-katha-drag-handle:active { cursor: grabbing; }
         .bulk-katha-index { align-self: center; color: var(--color-primary-dark); font-family: var(--font-heading); font-weight: 800; }
         .bulk-katha-file { min-width: 0; display: grid; gap: 3px; }
         .bulk-katha-file strong, .bulk-katha-state small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -403,8 +438,8 @@ export default function BulkAudioKathaUpload({
         .bulk-katha-remove { align-self: center; width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: 50%; background: transparent; color: var(--color-error); cursor: pointer; font-size: 18px; }
         .bulk-katha-footer { justify-content: space-between; margin-top: var(--space-5); }
         .bulk-katha-footer p { margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm); }
-        @media (max-width: 900px) { .bulk-katha-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bulk-katha-row { grid-template-columns: 30px 1fr 1fr 28px; } .bulk-katha-file { grid-column: span 2; } .bulk-katha-state { grid-column: 2 / span 2; padding: 0; } }
-        @media (max-width: 560px) { .bulk-katha-heading, .bulk-katha-footer { display: grid; } .bulk-katha-defaults, .bulk-katha-row { grid-template-columns: 28px 1fr 28px; } .bulk-katha-file, .bulk-katha-title-input, .bulk-katha-artwork, .bulk-katha-state { grid-column: 2; } .bulk-katha-row { align-items: center; } .bulk-katha-remove { grid-column: 3; grid-row: 1; } }
+        @media (max-width: 900px) { .bulk-katha-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bulk-katha-row { grid-template-columns: 24px 30px 1fr 1fr 28px; } .bulk-katha-file { grid-column: span 2; } .bulk-katha-state { grid-column: 3 / span 2; padding: 0; } }
+        @media (max-width: 560px) { .bulk-katha-heading, .bulk-katha-footer { display: grid; } .bulk-katha-defaults, .bulk-katha-row { grid-template-columns: 24px 28px 1fr 28px; } .bulk-katha-file, .bulk-katha-title-input, .bulk-katha-artwork, .bulk-katha-state { grid-column: 3; } .bulk-katha-row { align-items: center; } .bulk-katha-remove { grid-column: 4; grid-row: 1; } }
       `}</style>
     </section>
   );

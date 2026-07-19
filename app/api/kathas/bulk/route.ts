@@ -7,6 +7,7 @@ import {
   createBulkAudioKathas,
   bulkArchiveKathas,
   bulkHardDeleteKathas,
+  bulkSetThumbnail,
   type BulkAudioKathaInput,
 } from '@/services/kathaService';
 import { recordAudit } from '@/services/auditService';
@@ -85,6 +86,44 @@ export async function DELETE(req: NextRequest) {
     }
     console.error('DELETE /api/kathas/bulk', error);
     return NextResponse.json({ success: false, error: 'Failed to delete kathas' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const auth = await requireAdmin();
+    if (!auth.authorized) return auth.response;
+    const limited = enforceRateLimit(req, ADMIN_MUTATION_LIMIT);
+    if (limited) return limited;
+
+    const { ids, thumbnail } = await req.json() as { ids?: string[]; thumbnail?: string };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ success: false, error: 'ids array is required' }, { status: 400 });
+    }
+    if (!thumbnail) {
+      return NextResponse.json({ success: false, error: 'thumbnail is required' }, { status: 400 });
+    }
+
+    const result = await bulkSetThumbnail(ids, thumbnail);
+
+    await recordAudit({
+      actorId: auth.session.user.id,
+      action: 'katha.bulk_set_thumbnail',
+      entityType: 'Katha',
+      metadata: { ids, count: result.modifiedCount },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Artwork set for ${result.modifiedCount} katha(s)`,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    console.error('PUT /api/kathas/bulk', error);
+    return NextResponse.json({ success: false, error: 'Failed to set artwork' }, { status: 500 });
   }
 }
 

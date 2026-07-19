@@ -25,10 +25,16 @@ interface PlayerContextValue {
   isMuted: boolean;
   playbackRate: number;
   isVisible: boolean;
+  // Playlist
+  playlist: IKatha[];
+  playlistIndex: number;
   // Audio ref — shared across components
   audioRef: React.RefObject<HTMLAudioElement | null>;
   // Actions
   play: (katha: IKatha, options?: { startAt?: number }) => void;
+  playFromPlaylist: (kathas: IKatha[], startIndex?: number) => void;
+  nextTrack: () => void;
+  prevTrack: () => void;
   pause: () => void;
   resume: () => void;
   seek: (time: number) => void;
@@ -52,7 +58,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [isVisible, setIsVisible] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [playlist, setPlaylist] = useState<IKatha[]>([]);
+  const [playlistIndex, setPlaylistIndex] = useState(-1);
+  const playlistRef = useRef<IKatha[]>([]);
+  const playlistIndexRef = useRef(-1);
   const kathaRef = useRef<IKatha | null>(null);
+  const playRef = useRef<(katha: IKatha, options?: { startAt?: number }) => void>(() => {});
   const lastSavedAtRef = useRef(0);
   const viewTrackedRef = useRef(false);
   const announcedPlaybackRef = useRef(new Set<string>());
@@ -101,8 +112,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
     };
     const onEnded = () => {
-      setIsPlaying(false);
       saveProgress(audio.duration);
+      const pList = playlistRef.current;
+      const pIdx = playlistIndexRef.current;
+      const nextIdx = pIdx + 1;
+      if (pList.length > 0 && nextIdx < pList.length) {
+        playRef.current(pList[nextIdx]);
+        setPlaylistIndex(nextIdx);
+        playlistIndexRef.current = nextIdx;
+      } else {
+        setIsPlaying(false);
+      }
     };
     const onPlay = () => setIsPlaying(true);
     const onPause = () => {
@@ -212,6 +232,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     void startPlayback();
   }, [volume, isMuted, playbackRate]);
 
+  // Sync playRef so event handlers always have the latest play function
+  useEffect(() => {
+    playRef.current = play;
+  }, [play]);
+
   const pause = useCallback(() => {
     audioRef.current?.pause();
     setIsPlaying(false);
@@ -257,6 +282,37 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setCurrentTime(newTime);
   }, [currentTime, duration]);
 
+  const playFromPlaylist = useCallback((kathas: IKatha[], startIndex = 0) => {
+    setPlaylist(kathas);
+    setPlaylistIndex(startIndex);
+    playlistRef.current = kathas;
+    playlistIndexRef.current = startIndex;
+    announcedPlaybackRef.current = new Set<string>();
+    if (kathas[startIndex]) play(kathas[startIndex]);
+  }, [play]);
+
+  const nextTrack = useCallback(() => {
+    const nextIdx = playlistIndexRef.current + 1;
+    const pList = playlistRef.current;
+    if (pList.length > 0 && nextIdx < pList.length) {
+      announcedPlaybackRef.current = new Set<string>();
+      play(pList[nextIdx]);
+      setPlaylistIndex(nextIdx);
+      playlistIndexRef.current = nextIdx;
+    }
+  }, [play]);
+
+  const prevTrack = useCallback(() => {
+    const prevIdx = playlistIndexRef.current - 1;
+    const pList = playlistRef.current;
+    if (pList.length > 0 && prevIdx >= 0) {
+      announcedPlaybackRef.current = new Set<string>();
+      play(pList[prevIdx]);
+      setPlaylistIndex(prevIdx);
+      playlistIndexRef.current = prevIdx;
+    }
+  }, [play]);
+
   const close = useCallback(() => {
     saveProgress();
     audioRef.current?.pause();
@@ -266,6 +322,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setCurrentTime(0);
     setDuration(0);
     setIsVisible(false);
+    setPlaylist([]);
+    setPlaylistIndex(-1);
+    playlistRef.current = [];
+    playlistIndexRef.current = -1;
   }, [saveProgress]);
 
   return (
@@ -280,8 +340,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         isMuted,
         playbackRate,
         isVisible,
+        playlist,
+        playlistIndex,
         audioRef,
         play,
+        playFromPlaylist,
+        nextTrack,
+        prevTrack,
         pause,
         resume,
         seek,

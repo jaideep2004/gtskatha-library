@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { getMediaUrl, type MediaFolder } from '@/lib/media';
 
 interface AdminThumbnailProps {
@@ -9,12 +9,22 @@ interface AdminThumbnailProps {
 }
 
 export default function AdminThumbnail({ folder, value, alt }: AdminThumbnailProps) {
+  const [failed, setFailed] = useState(false);
   const src = getMediaUrl(folder, value);
+  const showImage = src && !failed;
 
   return (
     <div style={thumbnailStyle}>
-      {src ? (
-        <Image src={src} alt={alt} width={72} height={48} style={imageStyle} />
+      {showImage ? (
+        <Image
+          src={src}
+          alt={alt}
+          width={72}
+          height={48}
+          style={imageStyle}
+          onError={() => setFailed(true)}
+          unoptimized
+        />
       ) : (
         <span style={placeholderStyle} role="img" aria-label="No thumbnail">☬</span>
       )}

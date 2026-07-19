@@ -18,6 +18,7 @@ export interface IKathaDocument extends Document {
   allowDownload: boolean;
   archivedAt?: Date;
   views: number;
+  sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
   authorName?: string;
@@ -55,6 +56,7 @@ const KathaSchema = new Schema<IKathaDocument>(
     allowDownload: { type: Boolean, default: false },
     archivedAt: { type: Date },
     views: { type: Number, default: 0 },
+    sortOrder: { type: Number, default: 0, index: true },
     authorName: { type: String, trim: true },
     chapters: [{
       id: { type: String },
@@ -75,6 +77,8 @@ KathaSchema.index({ featured: 1 });
 KathaSchema.index({ published: 1 });
 KathaSchema.index({ status: 1, createdAt: -1 });
 KathaSchema.index({ createdAt: -1 });
+KathaSchema.index({ sortOrder: 1, createdAt: -1 });
+KathaSchema.index({ seriesId: 1, sortOrder: 1, createdAt: -1 });
 KathaSchema.index({ views: -1 });
 KathaSchema.index({ title: 'text', description: 'text', tags: 'text' });
 

@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { IKatha } from '@/types';
 import { formatDuration, formatDate } from '@/lib/utils';

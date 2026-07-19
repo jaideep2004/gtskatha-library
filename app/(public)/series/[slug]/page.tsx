@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import KathaList from '@/components/katha/KathaList';
+import PlaySeriesButton from '@/components/series/PlaySeriesButton';
 import { getSeriesBySlug } from '@/services/seriesService';
 import { getKathas } from '@/services/kathaService';
 import { ISeries, IKatha } from '@/types';
@@ -41,7 +42,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
 
     const result = await getKathas({
       series: (series as ISeries & { _id: string })._id,
-      sort: 'newest',
+      sort: 'manual',
       limit: 100,
     });
     kathas = serializeForClient(result.data) as unknown as IKatha[];
@@ -100,15 +101,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
             </div>
 
             {kathas.length > 0 && (
-              <Link
-                href={`/${kathas[0].type}/${kathas[0].slug}`}
-                className="btn btn-primary"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                ਸ਼ੁਰੂ ਤੋਂ ਚਲਾਓ
-              </Link>
+              <PlaySeriesButton kathas={kathas} />
             )}
           </div>
         </div>

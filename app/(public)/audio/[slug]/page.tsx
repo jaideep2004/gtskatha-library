@@ -52,7 +52,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
       series: seriesId,
       category: !seriesId && categoryId ? categoryId : undefined,
       limit: 4,
-      sort: 'newest',
+      sort: seriesId ? 'manual' : 'newest',
     });
     relatedKathas = (serializeForClient(relatedResult.data) as unknown as IKatha[])
       .filter((k) => k.slug !== slug)

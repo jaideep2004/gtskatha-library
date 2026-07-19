@@ -21,6 +21,8 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
     volume,
     isMuted,
     playbackRate,
+    playlist,
+    playlistIndex,
     resume,
     pause,
     seek,
@@ -28,6 +30,8 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
     toggleMute,
     setPlaybackRate,
     skip,
+    nextTrack,
+    prevTrack,
   } = usePlayerContext();
 
   function cycleSpeed() {
@@ -56,6 +60,14 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
 
   return (
     <div className={`audio-player-wrap${className ? ` ${className}` : ''}`}>
+      {/* Playlist indicator */}
+      {playlist.length > 1 && (
+        <div className="ap-playlist-info">
+          <span>{playlistIndex + 1} / {playlist.length}</span>
+          <span className="ap-playlist-title">{playlist[playlistIndex]?.title}</span>
+        </div>
+      )}
+
       {/* Time row */}
       <div className="ap-time-row">
         <span>{formatDuration(currentTime)}</span>
@@ -67,6 +79,21 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
         <button className="ap-ctrl-btn" onClick={cycleSpeed} aria-label={`Playback speed ${playbackRate}x`}>
           <span className="ap-speed-label">{playbackRate}×</span>
         </button>
+
+        {playlist.length > 1 && (
+          <button
+            className="ap-ctrl-btn"
+            onClick={prevTrack}
+            disabled={playlistIndex <= 0}
+            aria-label="Previous track"
+            style={playlistIndex <= 0 ? { opacity: 0.3 } : {}}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="19 20 9 12 19 4 19 20"/>
+              <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
+        )}
 
         <button className="ap-ctrl-btn ap-skip-btn" onClick={() => skip(-15)} aria-label="Rewind 15 seconds">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -116,6 +143,21 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
           <span className="ap-skip-label">15</span>
         </button>
 
+        {playlist.length > 1 && (
+          <button
+            className="ap-ctrl-btn"
+            onClick={nextTrack}
+            disabled={playlistIndex >= playlist.length - 1}
+            aria-label="Next track"
+            style={playlistIndex >= playlist.length - 1 ? { opacity: 0.3 } : {}}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 4 15 12 5 20 5 4"/>
+              <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
+        )}
+
         <div className="ap-volume-wrap">
           <button className="ap-ctrl-btn" onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
             {isMuted || volume === 0 ? (
@@ -164,6 +206,29 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
           border-radius: var(--radius-xl);
           padding: var(--space-6);
           margin: var(--space-6) 0;
+        }
+
+        .ap-playlist-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          font-size: 12px;
+          color: rgba(255,255,255,0.6);
+          margin-bottom: var(--space-4);
+          padding-bottom: var(--space-3);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .ap-playlist-info span:first-child {
+          background: rgba(255,255,255,0.1);
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          font-weight: 700;
+          font-size: 11px;
+        }
+        .ap-playlist-title {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .ap-time-row {

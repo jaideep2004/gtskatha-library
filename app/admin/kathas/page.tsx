@@ -108,13 +108,16 @@ export default function KathasAdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkArchiving, setBulkArchiving] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('admin_katha_sort') || 'newest');
+  const [sortBy, setSortBy] = useState(() => { try { return localStorage.getItem('admin_katha_sort') || 'newest'; } catch { return 'newest'; } });
   const [reorderMode, setReorderMode] = useState(false);
   const [reorderIds, setReorderIds] = useState<string[]>([]);
   const [reorderSaving, setReorderSaving] = useState(false);
   const [bulkArtworkFile, setBulkArtworkFile] = useState('');
   const [bulkArtworkUploading, setBulkArtworkUploading] = useState(false);
   const [bulkArtworkSaving, setBulkArtworkSaving] = useState(false);
+  const [bulkTitlesMode, setBulkTitlesMode] = useState(false);
+  const [bulkTitlesMap, setBulkTitlesMap] = useState<Record<string, string>>({});
+  const [bulkTitlesSaving, setBulkTitlesSaving] = useState(false);
 
   const loadKathas = useCallback(async () => {
     setLoading(true);
@@ -140,6 +143,8 @@ export default function KathasAdminPage() {
         setTotal(data.total);
         setTotalPages(data.totalPages);
         setSelectedIds(new Set());
+        setBulkTitlesMode(false);
+        setBulkTitlesMap({});
       }
       if (categoryData.success) setCategories(categoryData.data);
       if (seriesData.success) setSeriesOptions(seriesData.data);
@@ -372,7 +377,7 @@ export default function KathasAdminPage() {
           <select
             className="input"
             value={sortBy}
-            onChange={(e) => { localStorage.setItem('admin_katha_sort', e.target.value); setSortBy(e.target.value); setPage(1); }}
+            onChange={(e) => { try { localStorage.setItem('admin_katha_sort', e.target.value); } catch {} setSortBy(e.target.value); setPage(1); }}
             style={{ width: 130 }}
           >
             <option value="newest">Newest first</option>
@@ -781,6 +786,21 @@ export default function KathasAdminPage() {
                   </button>
                 </div>
               )}
+              {!bulkTitlesMode && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    const map: Record<string, string> = {};
+                    for (const k of kathas) {
+                      if (selectedIds.has(k._id)) map[k._id] = k.title;
+                    }
+                    setBulkTitlesMap(map);
+                    setBulkTitlesMode(true);
+                  }}
+                >
+                  Edit Titles
+                </button>
+              )}
               <button
                 className="btn btn-ghost btn-sm"
                 style={{ color: 'var(--color-error)' }}
@@ -792,6 +812,62 @@ export default function KathasAdminPage() {
               <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
                 Clear selection
               </button>
+            </div>
+          )}
+          {bulkTitlesMode && (
+            <div className="bulk-bar bulk-bar-column">
+              <div className="bulk-titles-header">
+                <span className="bulk-count">Editing {Object.keys(bulkTitlesMap).length} title(s)</span>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={bulkTitlesSaving}
+                  onClick={async () => {
+                    setBulkTitlesSaving(true);
+                    try {
+                      const titles = Object.entries(bulkTitlesMap).map(([id, title]) => ({ id, title }));
+                      const res = await fetch('/api/kathas/bulk-titles', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ titles }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        toast.success(data.message);
+                        setBulkTitlesMode(false);
+                        setBulkTitlesMap({});
+                        setSelectedIds(new Set());
+                        loadKathas();
+                      } else {
+                        toast.error(data.error ?? 'Failed to update titles.');
+                      }
+                    } catch {
+                      toast.error('Failed to update titles.');
+                    } finally {
+                      setBulkTitlesSaving(false);
+                    }
+                  }}
+                >
+                  {bulkTitlesSaving ? 'Saving…' : 'Save Titles'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setBulkTitlesMode(false)}>
+                  Cancel
+                </button>
+              </div>
+              <div className="bulk-titles-list">
+                {Object.entries(bulkTitlesMap).map(([id, title]) => {
+                  const katha = kathas.find((k) => k._id === id);
+                  return (
+                    <label key={id} className="bulk-title-row">
+                      <span className="bulk-title-label">{katha?.title ?? 'Unknown'}</span>
+                      <input
+                        className="input"
+                        value={title}
+                        onChange={(e) => setBulkTitlesMap((prev) => ({ ...prev, [id]: e.target.value }))}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
           {reorderMode && (
@@ -813,7 +889,7 @@ export default function KathasAdminPage() {
                       if (data.success) {
                         toast.success('Order saved.');
                         setReorderMode(false);
-                        localStorage.setItem('admin_katha_sort', 'manual');
+                        try { localStorage.setItem('admin_katha_sort', 'manual'); } catch {}
                         setSortBy('manual');
                         setPage(1);
                       } else {
@@ -1116,6 +1192,12 @@ export default function KathasAdminPage() {
         .bulk-artwork-inline .file-upload-wrap { flex-direction: row; }
         .bulk-artwork-inline .file-upload-area { min-height: 36px; padding: 4px 12px; }
         .bulk-artwork-name { font-size: var(--font-size-xs); color: var(--color-primary-dark); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bulk-bar-column { flex-direction: column; align-items: stretch; }
+        .bulk-titles-header { display: flex; align-items: center; gap: var(--space-3); }
+        .bulk-titles-list { display: grid; gap: var(--space-2); max-height: 280px; overflow-y: auto; padding: var(--space-3) 0; }
+        .bulk-title-row { display: flex; align-items: center; gap: var(--space-3); }
+        .bulk-title-label { min-width: 120px; font-size: var(--font-size-sm); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bulk-title-row .input { flex: 1; }
         .pagination-bar {
           display: flex; align-items: center; justify-content: center;
           gap: var(--space-3); margin-top: var(--space-6);

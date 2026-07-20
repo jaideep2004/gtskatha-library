@@ -31,7 +31,7 @@ interface BulkAudioKathaUploadProps {
 }
 
 const MAX_BATCH_SIZE = 20;
-const CONCURRENCY = 2;
+const CONCURRENCY = 5;
 const directoryInputProps = { webkitdirectory: '' } as unknown as InputHTMLAttributes<HTMLInputElement>;
 
 function fileStem(fileName: string) {
@@ -85,6 +85,7 @@ export default function BulkAudioKathaUpload({
   const [allowDownload, setAllowDownload] = useState(false);
   const [running, setRunning] = useState(false);
   const [activeBatch, setActiveBatch] = useState<{ current: number; total: number } | null>(null);
+  const [bulkTitleEditMode, setBulkTitleEditMode] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
@@ -116,14 +117,17 @@ export default function BulkAudioKathaUpload({
     const artworkByStem = new Map(thumbnailFiles.map((file) => [fileStem(file.name), file]));
     setDrafts((current) => {
       const existing = new Set(current.map((draft) => fileKey(draft.audioFile)));
-      const additions = selected.filter((file) => !existing.has(fileKey(file))).map((audioFile, index) => ({
-        id: `${fileKey(audioFile)}-${current.length + index}`,
-        audioFile,
-        title: titleFromFilename(audioFile.name),
-        thumbnailFile: artworkByStem.get(fileStem(audioFile.name)),
-        progress: 0,
-        status: 'pending' as const,
-      }));
+      const additions = selected
+        .filter((file) => !existing.has(fileKey(file)))
+        .map((audioFile) => ({
+          id: `${fileKey(audioFile)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          audioFile,
+          title: titleFromFilename(audioFile.name),
+          thumbnailFile: artworkByStem.get(fileStem(audioFile.name)),
+          progress: 0,
+          status: 'pending' as const,
+        }))
+        .sort((a, b) => a.audioFile.name.localeCompare(b.audioFile.name, undefined, { numeric: true }));
       if (!additions.length) toast.info('Those audio files are already in this intake.');
       return [...current, ...additions];
     });
@@ -201,8 +205,8 @@ export default function BulkAudioKathaUpload({
     }
   }
 
-  async function createReadyKathas(ready: AudioDraft[]) {
-    if (!ready.length) return;
+  async function createReadyKathas(ready: AudioDraft[], sortOffset: number): Promise<number> {
+    if (!ready.length) return 0;
 
     ready.forEach((draft) => updateDraft(draft.id, { status: 'creating', error: undefined }));
     const response = await fetch('/api/kathas/bulk', {
@@ -221,7 +225,7 @@ export default function BulkAudioKathaUpload({
           tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
           published: publish,
           allowDownload,
-          sortOrder: idx,
+          sortOrder: sortOffset + idx,
         })),
       }),
     });
@@ -230,11 +234,15 @@ export default function BulkAudioKathaUpload({
       throw new Error(payload.error ?? 'Katha creation failed');
     }
 
+    let successCount = 0;
     for (const result of payload.data as Array<{ clientId: string; success: boolean; error?: string }>) {
-      updateDraft(result.clientId, result.success
+      const ok = result.success;
+      updateDraft(result.clientId, ok
         ? { status: 'created', error: undefined }
         : { status: 'failed', error: result.error ?? 'Katha creation failed' });
+      if (ok) successCount += 1;
     }
+    return successCount;
   }
 
   async function uploadBatch(
@@ -279,6 +287,7 @@ export default function BulkAudioKathaUpload({
     abortRef.current = controller;
     const thumbnailUploads = new Map<File, Promise<string>>();
     const batches = splitIntoBatches(candidates, MAX_BATCH_SIZE);
+    let createdCount = 0;
 
     try {
       for (const [index, batch] of batches.entries()) {
@@ -287,7 +296,7 @@ export default function BulkAudioKathaUpload({
         const ready = await uploadBatch(batch, controller, thumbnailUploads);
         if (controller.signal.aborted || !ready.length) continue;
         try {
-          await createReadyKathas(ready);
+          createdCount += await createReadyKathas(ready, createdCount);
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Katha creation failed. Retry this batch.';
           ready.forEach((draft) => updateDraft(draft.id, { status: 'failed', error: message }));
@@ -347,7 +356,27 @@ export default function BulkAudioKathaUpload({
             <label>Tags<input value={tags} disabled={running} onChange={(event) => setTags(event.target.value)} placeholder="gurbani, ang 1" /></label>
             <label className="bulk-katha-check"><input type="checkbox" checked={publish} disabled={running} onChange={(event) => setPublish(event.target.checked)} /> Publish after upload</label>
             <label className="bulk-katha-check"><input type="checkbox" checked={allowDownload} disabled={running} onChange={(event) => setAllowDownload(event.target.checked)} /> Allow downloads</label>
+            <button type="button" className="btn btn-ghost btn-sm" style={{ alignSelf: 'end' }} onClick={() => setBulkTitleEditMode((v) => !v)}>
+              {bulkTitleEditMode ? 'Done Editing Titles' : 'Bulk Edit Titles'}
+            </button>
           </div>
+
+          {bulkTitleEditMode && (
+            <div className="bulk-upload-titles-panel">
+              <p className="bulk-upload-titles-heading">Edit all titles at once</p>
+              {drafts.map((draft) => (
+                <label key={draft.id} className="bulk-upload-title-row">
+                  <span className="bulk-upload-title-file">{draft.audioFile.name}</span>
+                  <input
+                    className="input"
+                    value={draft.title}
+                    disabled={draft.status === 'created'}
+                    onChange={(e) => updateDraft(draft.id, { title: e.target.value })}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
 
           <div className="bulk-katha-list">
             {drafts.map((draft, index) => (
@@ -385,7 +414,7 @@ export default function BulkAudioKathaUpload({
                 <span className="bulk-katha-drag-handle" aria-label="Drag to reorder">⠿</span>
                 <span className="bulk-katha-index">{String(index + 1).padStart(2, '0')}</span>
                 <div className="bulk-katha-file"><strong>{draft.audioFile.name}</strong><small>Batch {Math.floor(index / MAX_BATCH_SIZE) + 1} · {Math.round(draft.audioFile.size / 1024 / 1024)} MB</small></div>
-                <label className="bulk-katha-title-input"><span>Title</span><input value={draft.title} disabled={running || draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { title: event.target.value })} /></label>
+                <label className="bulk-katha-title-input"><span>Title</span><input value={draft.title} disabled={draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { title: event.target.value })} /></label>
                 <label className="bulk-katha-artwork"><span>Artwork</span><div className="bulk-katha-artwork-control">{draft.thumbnailFile && artworkPreviewUrls[fileKey(draft.thumbnailFile)] ? <span className="bulk-katha-artwork-preview" role="img" aria-label="Selected artwork preview" style={{ backgroundImage: `url(${artworkPreviewUrls[fileKey(draft.thumbnailFile)]})` }} /> : <span className="bulk-katha-artwork-empty" aria-hidden>✦</span>}<select value={draft.thumbnailFile ? fileKey(draft.thumbnailFile) : ''} disabled={running || draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { thumbnailFile: thumbnailFiles.find((file) => fileKey(file) === event.target.value), thumbnail: undefined })}><option value="">No artwork</option>{thumbnailFiles.map((file) => <option key={fileKey(file)} value={fileKey(file)}>{file.name}</option>)}</select></div></label>
                 <div className="bulk-katha-state"><strong>{draft.status === 'uploading' ? `${draft.progress}% uploading` : draft.status}</strong>{draft.error && <small>{draft.error}</small>}</div>
                 {!running && draft.status !== 'created' && <button type="button" className="bulk-katha-remove" onClick={() => setDrafts((current) => current.filter((item) => item.id !== draft.id))} aria-label={`Remove ${draft.title}`}>×</button>}
@@ -438,6 +467,11 @@ export default function BulkAudioKathaUpload({
         .bulk-katha-remove { align-self: center; width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: 50%; background: transparent; color: var(--color-error); cursor: pointer; font-size: 18px; }
         .bulk-katha-footer { justify-content: space-between; margin-top: var(--space-5); }
         .bulk-katha-footer p { margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm); }
+        .bulk-upload-titles-panel { padding: var(--space-4); margin: var(--space-4) 0; border: 1px solid var(--color-primary-light); border-radius: var(--radius-md); background: var(--color-surface); display: grid; gap: var(--space-3); max-height: 360px; overflow-y: auto; }
+        .bulk-upload-titles-heading { margin: 0; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-primary-dark); }
+        .bulk-upload-title-row { display: flex; align-items: center; gap: var(--space-3); }
+        .bulk-upload-title-file { min-width: 160px; font-size: var(--font-size-xs); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+        .bulk-upload-title-row .input { flex: 1; }
         @media (max-width: 900px) { .bulk-katha-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bulk-katha-row { grid-template-columns: 24px 30px 1fr 1fr 28px; } .bulk-katha-file { grid-column: span 2; } .bulk-katha-state { grid-column: 3 / span 2; padding: 0; } }
         @media (max-width: 560px) { .bulk-katha-heading, .bulk-katha-footer { display: grid; } .bulk-katha-defaults, .bulk-katha-row { grid-template-columns: 24px 28px 1fr 28px; } .bulk-katha-file, .bulk-katha-title-input, .bulk-katha-artwork, .bulk-katha-state { grid-column: 3; } .bulk-katha-row { align-items: center; } .bulk-katha-remove { grid-column: 4; grid-row: 1; } }
       `}</style>

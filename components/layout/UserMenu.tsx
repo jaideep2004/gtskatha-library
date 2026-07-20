@@ -13,6 +13,20 @@ interface UserMenuProps {
 export default function UserMenu({ session }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  };
+
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimerRef.current = setTimeout(() => setOpen(false), 300);
+  };
+
+  useEffect(() => {
+    return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     function closeOutside(event: PointerEvent) {
@@ -58,24 +72,29 @@ export default function UserMenu({ session }: UserMenuProps) {
   }
 
   return (
-    <div
-      className="user-menu"
-      ref={rootRef}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <button
-        type="button"
-        className={`navbar-avatar navbar-avatar-letter ${open ? 'active' : ''}`}
-        aria-label={`Open ${name}'s account menu`}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => setOpen((current) => !current)}
+      <div
+        className="user-menu"
+        ref={rootRef}
+        onMouseEnter={() => { cancelClose(); setOpen(true); }}
+        onMouseLeave={scheduleClose}
       >
-        {initial}
-      </button>
+        <button
+          type="button"
+          className={`navbar-avatar navbar-avatar-letter ${open ? 'active' : ''}`}
+          aria-label={`Open ${name}'s account menu`}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          onClick={() => setOpen((current) => !current)}
+        >
+          {initial}
+        </button>
 
-      <div className={`user-menu-popover ${open ? 'open' : ''}`} role="menu">
+        <div
+          className={`user-menu-popover ${open ? 'open' : ''}`}
+          role="menu"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
         <div className="user-menu-card">
           <span className="user-menu-monogram">{initial}</span>
           <span>

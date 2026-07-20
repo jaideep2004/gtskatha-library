@@ -12,7 +12,7 @@ export interface StorageAdapter {
 
 const folders: MediaFolder[] = ['audio', 'video', 'thumbnails', 'series'];
 
-export function resolveStorageRoot(): string {
+export function resolveStorageRoot(): string {   
   const configured = process.env.MEDIA_STORAGE_ROOT;
   if (!configured) {
     return path.join(/* turbopackIgnore: true */ process.cwd(), 'public', 'uploads');

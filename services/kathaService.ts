@@ -427,6 +427,21 @@ function assertMediaRequirements(data: Record<string, unknown>) {
   }
 }
 
+export async function bulkUpdateTitles(updates: Array<{ id: string; title: string }>) {
+  await connectDB();
+  const ops = updates
+    .filter(({ id }) => mongoose.Types.ObjectId.isValid(id))
+    .map(({ id, title }) => ({
+      updateOne: {
+        filter: { _id: new mongoose.Types.ObjectId(id) },
+        update: { $set: { title } },
+      },
+    }));
+  if (ops.length === 0) throw new DomainError('No valid IDs provided', 400);
+  const result = await Katha.bulkWrite(ops);
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
 export async function bulkSetThumbnail(ids: string[], thumbnail: string) {
   await connectDB();
   const objectIds = ids

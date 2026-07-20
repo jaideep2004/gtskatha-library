@@ -31,7 +31,7 @@ Steps:
 
 ---
 
-## ARCHITECTURE
+## ARCHITECTURE....
 
 * Frontend must not contain business-critical logic
 * API routes/controllers orchestrate only

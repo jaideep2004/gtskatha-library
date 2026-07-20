@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       series: searchParams.get('series') ?? undefined,
       page: parseInt(searchParams.get('page') ?? '1'),
       limit: parseInt(searchParams.get('limit') ?? '20'),
-      sort: (searchParams.get('sort') as 'newest' | 'oldest' | 'popular' | 'featured') ?? 'newest',
+      sort: (searchParams.get('sort') as 'newest' | 'oldest' | 'popular' | 'featured' | 'manual') ?? 'newest',
       includeUnpublished: session?.user?.role === 'admin',
     };
 

@@ -11,6 +11,34 @@ export async function getAllSeries(featuredOnly = false) {
   return Series.find(query).sort({ sortOrder: 1, title: 1 }).lean();
 }
 
+export async function getAllSeriesWithCounts(featuredOnly = false) {
+  await connectDB();
+  const query = featuredOnly
+    ? { featured: true, archived: { $ne: true } }
+    : { archived: { $ne: true } };
+  const seriesList = await Series.find(query).sort({ sortOrder: 1, title: 1 }).lean();
+
+  const counts = await Katha.aggregate([
+    { $match: { seriesId: { $in: seriesList.map((s) => s._id) } } },
+    {
+      $group: {
+        _id: '$seriesId',
+        total: { $sum: 1 },
+        audio: { $sum: { $cond: [{ $eq: ['$type', 'audio'] }, 1, 0] } },
+        video: { $sum: { $cond: [{ $eq: ['$type', 'video'] }, 1, 0] } },
+      },
+    },
+  ]);
+  const countMap = new Map(counts.map((c) => [String(c._id), c]));
+
+  return seriesList.map((s) => ({
+    ...s,
+    kathaCount: countMap.get(String(s._id))?.total ?? 0,
+    audioCount: countMap.get(String(s._id))?.audio ?? 0,
+    videoCount: countMap.get(String(s._id))?.video ?? 0,
+  }));
+}
+
 export async function getSeriesBySlug(slug: string) {
   await connectDB();
   return Series.findOne({ slug, archived: { $ne: true } }).lean();

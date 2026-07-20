@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllSeries, createSeries } from '@/services/seriesService';
+import { getAllSeriesWithCounts, createSeries } from '@/services/seriesService';
 import { generateSlug } from '@/lib/utils';
 import { requireAdmin } from '@/lib/apiAuth';
 import { ADMIN_MUTATION_LIMIT, enforceRateLimit } from '@/lib/rateLimit';
@@ -8,7 +8,7 @@ import { ValidationError, validateSeriesInput } from '@/lib/validation';
 export async function GET(req: NextRequest) {
   try {
     const featuredOnly = req.nextUrl.searchParams.get('featured') === 'true';
-    const series = await getAllSeries(featuredOnly);
+    const series = await getAllSeriesWithCounts(featuredOnly);
     return NextResponse.json({ success: true, data: series });
   } catch (error) {
     console.error('GET /api/series', error);

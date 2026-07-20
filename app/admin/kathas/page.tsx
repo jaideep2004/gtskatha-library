@@ -94,6 +94,7 @@ export default function KathasAdminPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(empty);
@@ -107,6 +108,8 @@ export default function KathasAdminPage() {
   const mediaUploading = audioUploading || videoUploading || thumbnailUploading;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkArchiving, setBulkArchiving] = useState(false);
+  const [bulkPublishing, setBulkPublishing] = useState(false);
+  const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState(() => { try { return localStorage.getItem('admin_katha_sort') || 'newest'; } catch { return 'newest'; } });
   const [reorderMode, setReorderMode] = useState(false);
@@ -167,6 +170,8 @@ export default function KathasAdminPage() {
 
   async function openEdit(k: Katha) {
     setError('');
+    setFormLoading(true);
+    setShowForm(true);
     try {
       const res = await fetch(`/api/kathas/${k.slug}`);
       const data = await res.json();
@@ -202,9 +207,11 @@ export default function KathasAdminPage() {
         })) ?? [],
       });
       setEditingSlug(k.slug);
-      setShowForm(true);
     } catch (loadError) {
       toast.error(loadError instanceof Error ? loadError.message : 'Failed to load katha');
+      setShowForm(false);
+    } finally {
+      setFormLoading(false);
     }
   }
 
@@ -291,6 +298,7 @@ export default function KathasAdminPage() {
   }
 
   async function togglePublish(slug: string, current: boolean) {
+    setTogglingSlug(slug);
     try {
       const response = await fetch(`/api/kathas/${slug}`, {
         method: 'PUT',
@@ -305,6 +313,8 @@ export default function KathasAdminPage() {
       loadKathas();
     } catch (updateError) {
       toast.error(updateError instanceof Error ? updateError.message : 'Failed to update');
+    } finally {
+      setTogglingSlug(null);
     }
   }
 
@@ -328,6 +338,32 @@ export default function KathasAdminPage() {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(kathas.map((k) => k._id)));
+    }
+  }
+
+  async function handleBulkPublish(published: boolean) {
+    if (selectedIds.size === 0) return;
+    const label = published ? 'publish' : 'unpublish';
+    if (!confirm(`${label} ${selectedIds.size} katha(s)?`)) return;
+    setBulkPublishing(true);
+    try {
+      const res = await fetch('/api/kathas/bulk-publish', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds), published }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setSelectedIds(new Set());
+        loadKathas();
+      } else {
+        toast.error(data.error ?? 'Bulk publish failed.');
+      }
+    } catch {
+      toast.error('Bulk publish failed.');
+    } finally {
+      setBulkPublishing(false);
     }
   }
 
@@ -416,22 +452,32 @@ export default function KathasAdminPage() {
       )}
 
       {showForm && (
-        <div className="admin-form-card">
-          <h2 className="admin-form-title">{editingSlug ? 'Edit Katha' : 'Add New Katha'}</h2>
+        <div className="admin-form-overlay" onClick={() => { if (!formLoading) setShowForm(false); }}>
+          <div className="admin-form-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-form-modal-header">
+            <h2 className="admin-form-title">{editingSlug ? 'Edit Katha' : 'Add New Katha'}</h2>
+            {!formLoading && <button type="button" className="admin-form-close" onClick={() => setShowForm(false)} aria-label="Close">×</button>}
+          </div>
+          {formLoading ? (
+            <div className="admin-form-loader">
+              <span className="badge-spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+              <span>Loading katha…</span>
+            </div>
+          ) : (
           <form className="admin-form" onSubmit={handleSubmit}>
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label className="form-label" htmlFor="k-title">Title *</label>
-                <input
-                  id="k-title"
-                  type="text"
-                  className="input"
-                  placeholder="Katha title"
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="k-title">Title *</label>
+              <input
+                id="k-title"
+                type="text"
+                className="input"
+                placeholder="Katha title"
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="k-type">Type *</label>
                 <select
@@ -444,18 +490,6 @@ export default function KathasAdminPage() {
                   <option value="video">Video</option>
                 </select>
               </div>
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label" htmlFor="k-desc">Description</label>
-                <textarea
-                  id="k-desc"
-                  className="input"
-                  rows={3}
-                  placeholder="Katha description..."
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="k-author">Speaker / Author</label>
                 <input
@@ -467,30 +501,20 @@ export default function KathasAdminPage() {
                   onChange={(e) => setForm((f) => ({ ...f, authorName: e.target.value }))}
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="k-duration">Duration in seconds</label>
-                <input
-                  id="k-duration"
-                  type="number"
-                  className="input"
-                  min="0"
-                  step="1"
-                  placeholder="Auto-detection planned; enter if known"
-                  value={form.duration}
-                  onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="k-tags">Tags (comma separated)</label>
-                <input
-                  id="k-tags"
-                  type="text"
-                  className="input"
-                  placeholder="naam, simran, gurbani"
-                  value={form.tags}
-                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                />
-              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="k-desc">Description</label>
+              <textarea
+                id="k-desc"
+                className="input"
+                rows={3}
+                placeholder="Katha description..."
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="k-category">Category</label>
                 <select
@@ -523,192 +547,218 @@ export default function KathasAdminPage() {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Options</label>
-                <div style={{ display: 'flex', gap: 'var(--space-4)', paddingTop: 4 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={form.published}
-                      onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
-                    />
-                    Published
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={form.featured}
-                      onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
-                    />
-                    Featured
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={form.allowDownload}
-                      onChange={(e) => setForm((f) => ({ ...f, allowDownload: e.target.checked }))}
-                    />
-                    Allow download
-                  </label>
-                </div>
+                <label className="form-label" htmlFor="k-tags">Tags (comma separated)</label>
+                <input
+                  id="k-tags"
+                  type="text"
+                  className="input"
+                  placeholder="naam, simran, gurbani"
+                  value={form.tags}
+                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+                />
               </div>
-              {/* Media uploads */}
-              {form.type === 'audio' && (
-                <div className="form-group">
-                  <FileUpload
-                    key={`audio-${editingSlug ?? 'new'}`}
-                    folder="audio"
-                    label="Audio File"
-                    accept="audio/*,.mp3,.mpeg,.mpga"
-                    hint="MP3, MPEG, MPGA, WAV, OGG, FLAC — max 1 GB"
-                    currentFile={form.audioUrl}
-                    onUploaded={(filename) => setForm((f) => ({ ...f, audioUrl: filename }))}
-                    onUploadingChange={setAudioUploading}
-                  />
-                </div>
-              )}
-              {form.type === 'video' && (
-                <div className="form-group">
-                  <FileUpload
-                    key={`video-${editingSlug ?? 'new'}`}
-                    folder="video"
-                    label="Video File"
-                    accept="video/*"
-                    hint="MP4, WebM — max 8 GB"
-                    currentFile={form.videoUrl}
-                    onUploaded={(filename) => setForm((f) => ({ ...f, videoUrl: filename }))}
-                    onUploadingChange={setVideoUploading}
-                  />
-                </div>
-              )}
               <div className="form-group">
-                <FileUpload
-                  key={`thumbnail-${editingSlug ?? 'new'}`}
-                  folder="thumbnails"
-                  label="Thumbnail"
-                  accept="image/*"
-                  hint="JPG, PNG, WebP — max 20 MB"
-                  currentFile={form.thumbnail}
-                  onUploaded={(filename) => setForm((f) => ({ ...f, thumbnail: filename }))}
-                  onUploadingChange={setThumbnailUploading}
-                />
-              </div>
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label" htmlFor="k-takeaways">Key Takeaways</label>
-                <textarea
-                  id="k-takeaways"
+                <label className="form-label" htmlFor="k-duration">Duration (seconds)</label>
+                <input
+                  id="k-duration"
+                  type="number"
                   className="input"
-                  rows={4}
-                  placeholder="One takeaway per line…"
-                  value={form.keyTakeaways}
-                  onChange={(e) => setForm((f) => ({ ...f, keyTakeaways: e.target.value }))}
-                  style={{ resize: 'vertical' }}
+                  min="0"
+                  step="1"
+                  placeholder="Auto-detection planned; enter if known"
+                  value={form.duration}
+                  onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))}
                 />
-              </div>
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label" htmlFor="k-references">References</label>
-                <textarea
-                  id="k-references"
-                  className="input"
-                  rows={3}
-                  placeholder="One reference per line…"
-                  value={form.references}
-                  onChange={(e) => setForm((f) => ({ ...f, references: e.target.value }))}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <div className="chapter-heading">
-                  <label className="form-label">Chapters</label>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setForm((f) => ({
-                      ...f,
-                      chapters: [
-                        ...f.chapters,
-                        { id: `chapter-${f.chapters.length + 1}`, title: '', startTime: '0', duration: '0' },
-                      ],
-                    }))}
-                  >
-                    Add Chapter
-                  </button>
-                </div>
-                <div className="chapter-list">
-                  {form.chapters.length === 0 && (
-                    <p className="chapter-empty">No chapters added.</p>
-                  )}
-                  {form.chapters.map((chapter, index) => (
-                    <div className="chapter-row" key={`${chapter.id}-${index}`}>
-                      <span className="chapter-number">{index + 1}</span>
-                      <input
-                        className="input"
-                        aria-label={`Chapter ${index + 1} title`}
-                        placeholder="Chapter title…"
-                        value={chapter.title}
-                        onChange={(e) => setForm((f) => ({
-                          ...f,
-                          chapters: f.chapters.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, title: e.target.value } : item
-                          ),
-                        }))}
-                      />
-                      <input
-                        className="input chapter-time"
-                        type="number"
-                        min="0"
-                        aria-label={`Chapter ${index + 1} start time in seconds`}
-                        placeholder="Start"
-                        value={chapter.startTime}
-                        onChange={(e) => setForm((f) => ({
-                          ...f,
-                          chapters: f.chapters.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, startTime: e.target.value } : item
-                          ),
-                        }))}
-                      />
-                      <input
-                        className="input chapter-time"
-                        type="number"
-                        min="0"
-                        aria-label={`Chapter ${index + 1} duration in seconds`}
-                        placeholder="Duration"
-                        value={chapter.duration}
-                        onChange={(e) => setForm((f) => ({
-                          ...f,
-                          chapters: f.chapters.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, duration: e.target.value } : item
-                          ),
-                        }))}
-                      />
-                      <button
-                        type="button"
-                        className="chapter-remove"
-                        aria-label={`Remove chapter ${index + 1}`}
-                        onClick={() => setForm((f) => ({
-                          ...f,
-                          chapters: f.chapters.filter((_, itemIndex) => itemIndex !== index),
-                        }))}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
-            {error && (
-              <p style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-3)' }}>
-                {error}
-              </p>
+            <div className="form-group">
+              <label className="form-label">Options</label>
+              <div className="form-checkboxes">
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.published}
+                    onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+                  />
+                  Published
+                </label>
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
+                  />
+                  Featured
+                </label>
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.allowDownload}
+                    onChange={(e) => setForm((f) => ({ ...f, allowDownload: e.target.checked }))}
+                  />
+                  Allow download
+                </label>
+              </div>
+            </div>
+            <div className="form-divider" />
+            {form.type === 'audio' && (
+              <div className="form-group">
+                <FileUpload
+                  key={`audio-${editingSlug ?? 'new'}`}
+                  folder="audio"
+                  label="Audio File"
+                  accept="audio/*,.mp3,.mpeg,.mpga"
+                  hint="MP3, MPEG, MPGA, WAV, OGG, FLAC — max 1 GB"
+                  currentFile={form.audioUrl}
+                  onUploaded={(filename) => setForm((f) => ({ ...f, audioUrl: filename }))}
+                  onUploadingChange={setAudioUploading}
+                />
+              </div>
             )}
-            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+            {form.type === 'video' && (
+              <div className="form-group">
+                <FileUpload
+                  key={`video-${editingSlug ?? 'new'}`}
+                  folder="video"
+                  label="Video File"
+                  accept="video/*"
+                  hint="MP4, WebM — max 8 GB"
+                  currentFile={form.videoUrl}
+                  onUploaded={(filename) => setForm((f) => ({ ...f, videoUrl: filename }))}
+                  onUploadingChange={setVideoUploading}
+                />
+              </div>
+            )}
+            <div className="form-group">
+              <FileUpload
+                key={`thumbnail-${editingSlug ?? 'new'}`}
+                folder="thumbnails"
+                label="Thumbnail"
+                accept="image/*"
+                hint="JPG, PNG, WebP — max 20 MB"
+                currentFile={form.thumbnail}
+                onUploaded={(filename) => setForm((f) => ({ ...f, thumbnail: filename }))}
+                onUploadingChange={setThumbnailUploading}
+              />
+            </div>
+            <div className="form-divider" />
+            <div className="form-group">
+              <label className="form-label" htmlFor="k-takeaways">Key Takeaways</label>
+              <textarea
+                id="k-takeaways"
+                className="input"
+                rows={4}
+                placeholder="One takeaway per line…"
+                value={form.keyTakeaways}
+                onChange={(e) => setForm((f) => ({ ...f, keyTakeaways: e.target.value }))}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="k-references">References</label>
+              <textarea
+                id="k-references"
+                className="input"
+                rows={3}
+                placeholder="One reference per line…"
+                value={form.references}
+                onChange={(e) => setForm((f) => ({ ...f, references: e.target.value }))}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+            <div className="form-divider" />
+            <div className="form-group">
+              <div className="chapter-heading">
+                <label className="form-label">Chapters</label>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setForm((f) => ({
+                    ...f,
+                    chapters: [
+                      ...f.chapters,
+                      { id: `chapter-${f.chapters.length + 1}`, title: '', startTime: '0', duration: '0' },
+                    ],
+                  }))}
+                >
+                  Add Chapter
+                </button>
+              </div>
+              <div className="chapter-list">
+                {form.chapters.length === 0 && (
+                  <p className="chapter-empty">No chapters added.</p>
+                )}
+                {form.chapters.map((chapter, index) => (
+                  <div className="chapter-row" key={`${chapter.id}-${index}`}>
+                    <span className="chapter-number">{index + 1}</span>
+                    <input
+                      className="input"
+                      aria-label={`Chapter ${index + 1} title`}
+                      placeholder="Chapter title…"
+                      value={chapter.title}
+                      onChange={(e) => setForm((f) => ({
+                        ...f,
+                        chapters: f.chapters.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, title: e.target.value } : item
+                        ),
+                      }))}
+                    />
+                    <input
+                      className="input chapter-time"
+                      type="number"
+                      min="0"
+                      aria-label={`Chapter ${index + 1} start time in seconds`}
+                      placeholder="Start"
+                      value={chapter.startTime}
+                      onChange={(e) => setForm((f) => ({
+                        ...f,
+                        chapters: f.chapters.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, startTime: e.target.value } : item
+                        ),
+                      }))}
+                    />
+                    <input
+                      className="input chapter-time"
+                      type="number"
+                      min="0"
+                      aria-label={`Chapter ${index + 1} duration in seconds`}
+                      placeholder="Duration"
+                      value={chapter.duration}
+                      onChange={(e) => setForm((f) => ({
+                        ...f,
+                        chapters: f.chapters.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, duration: e.target.value } : item
+                        ),
+                      }))}
+                    />
+                    <button
+                      type="button"
+                      className="chapter-remove"
+                      aria-label={`Remove chapter ${index + 1}`}
+                      onClick={() => setForm((f) => ({
+                        ...f,
+                        chapters: f.chapters.filter((_, itemIndex) => itemIndex !== index),
+                      }))}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-divider" />
+            <div className="modal-form-actions">
               <button type="submit" className="btn btn-primary" disabled={saving || mediaUploading}>
                 {mediaUploading ? 'Uploading Media…' : saving ? 'Saving…' : 'Save Katha'}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
           </form>
+          )}
+        </div>
         </div>
       )}
 
@@ -801,6 +851,21 @@ export default function KathasAdminPage() {
                   Edit Titles
                 </button>
               )}
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--color-success)' }}
+                disabled={bulkPublishing}
+                onClick={() => handleBulkPublish(true)}
+              >
+                {bulkPublishing ? 'Publishing…' : 'Publish Selected'}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={bulkPublishing}
+                onClick={() => handleBulkPublish(false)}
+              >
+                {bulkPublishing ? 'Unpublishing…' : 'Unpublish Selected'}
+              </button>
               <button
                 className="btn btn-ghost btn-sm"
                 style={{ color: 'var(--color-error)' }}
@@ -989,7 +1054,18 @@ export default function KathasAdminPage() {
                     <td><span className="category-cell">{getCategoryName(k!)}</span></td>
                     <td>{k!.duration ? formatDuration(k!.duration) : '—'}</td>
                     <td>{k!.views.toLocaleString()}</td>
-                    <td><button className={k!.published ? 'status-published' : 'status-draft'} style={{ cursor: 'default', background: 'none', border: 'none', padding: 0 }}>{k!.published ? 'Published' : 'Draft'}</button></td>
+                    <td>
+                      <button
+                        className={`status-badge ${k!.status === 'archived' ? 'badge-archived' : k!.published ? 'badge-published' : 'badge-draft'}${togglingSlug === k!.slug ? ' badge-toggling' : ''}`}
+                        onClick={() => togglePublish(k!.slug, k!.published)}
+                        disabled={togglingSlug === k!.slug}
+                        title={k!.published ? 'Click to unpublish' : 'Click to publish'}
+                      >
+                        {togglingSlug === k!.slug ? (
+                          <span className="badge-spinner" />
+                        ) : k!.status === 'archived' ? 'Archived' : k!.published ? 'Published' : 'Draft'}
+                      </button>
+                    </td>
                     <td>{formatDate(new Date(k!.createdAt))}</td>
                   </tr>
                   )) : kathas.map((k, idx) => (
@@ -1021,12 +1097,14 @@ export default function KathasAdminPage() {
                     <td>{k.views.toLocaleString()}</td>
                     <td>
                       <button
-                        className={k.status === 'archived' ? 'status-draft' : k.published ? 'status-published' : 'status-draft'}
+                        className={`status-badge ${k.status === 'archived' ? 'badge-archived' : k.published ? 'badge-published' : 'badge-draft'}${togglingSlug === k.slug ? ' badge-toggling' : ''}`}
                         onClick={() => togglePublish(k.slug, k.published)}
-                        style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        disabled={togglingSlug === k.slug}
                         title={k.published ? 'Click to unpublish' : 'Click to publish'}
                       >
-                        {k.status === 'archived' ? 'Archived' : k.published ? 'Published' : 'Draft'}
+                        {togglingSlug === k.slug ? (
+                          <span className="badge-spinner" />
+                        ) : k.status === 'archived' ? 'Archived' : k.published ? 'Published' : 'Draft'}
                       </button>
                     </td>
                     <td>{formatDate(new Date(k.createdAt))}</td>
@@ -1099,22 +1177,48 @@ export default function KathasAdminPage() {
           font-weight: 700; margin-bottom: var(--space-1);
         }
         .admin-page-sub { color: var(--color-text-muted); font-size: var(--font-size-sm); }
-        .admin-form-card {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
-          margin-bottom: var(--space-6);
-          box-shadow: var(--shadow-sm);
-        }
+        .admin-form-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);animation:adminFormFadeIn 180ms ease}
+        .admin-form-modal{background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:min(680px,calc(100vw - var(--space-8)));max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:adminFormPop 220ms cubic-bezier(.34,1.56,.64,1)}
+        .admin-form-modal .form-group input:not([type=checkbox]),
+        .admin-form-modal .form-group select,
+        .admin-form-modal .form-group textarea { width: 100%; box-sizing: border-box; }
+        .admin-form-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5)}
+        .admin-form-close{width:32px;height:32px;border:1px solid var(--color-border);border-radius:50%;background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;font-size:20px;display:grid;place-items:center;transition:color 140ms ease,border-color 140ms ease}
+        .admin-form-close:hover{color:var(--color-error);border-color:var(--color-error)}
+        @keyframes adminFormFadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes adminFormPop{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
         .admin-form-title {
           font-family: var(--font-heading);
-          font-size: var(--font-size-lg); margin-bottom: var(--space-5);
+          font-size: var(--font-size-lg);
         }
-        .admin-form-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: var(--space-4);
+        .admin-form > .form-group { margin-bottom: var(--space-4); }
+        .form-row {
+          display: flex; gap: var(--space-4);
+          margin-bottom: var(--space-4);
+        }
+        .form-row > .form-group { flex: 1; margin-bottom: 0; }
+        @media (max-width: 600px) { .form-row { flex-direction: column; } }
+        .form-divider {
+          height: 1px; background: var(--color-border);
+          margin: var(--space-5) 0;
+        }
+        .form-checkboxes {
+          display: flex; flex-wrap: wrap; gap: var(--space-5);
+          padding: var(--space-2) 0;
+        }
+        .form-checkbox {
+          display: flex; align-items: center; gap: 6px;
+          font-size: var(--font-size-sm); cursor: pointer;
+        }
+        .modal-form-actions {
+          display: flex; gap: var(--space-3);
+          justify-content: flex-end; padding-top: var(--space-2);
+        }
+        .admin-form-loader {
+          display: flex; align-items: center; justify-content: center; gap: var(--space-3);
+          padding: var(--space-12) 0;
+          color: var(--color-text-muted);
+          font-size: var(--font-size-sm);
         }
         .admin-table-wrap {
           background: var(--color-surface);
@@ -1160,19 +1264,59 @@ export default function KathasAdminPage() {
           font-size: var(--font-size-sm); color: var(--color-primary-dark);
         }
         .reorder-bar > div { display: flex; gap: var(--space-3); }
-        .status-published {
-          color: var(--color-success); background: var(--color-success-bg);
-          padding: 2px 8px; border-radius: var(--radius-full);
-          font-size: var(--font-size-xs); font-weight: 500;
+        .status-badge {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 3px 12px; border-radius: 99px;
+          font-size: var(--font-size-xs); font-weight: 600;
+          border: none; cursor: pointer;
+          transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+          letter-spacing: .01em;
+          min-height: 24px;
         }
-        .status-draft {
-          color: var(--color-text-muted); background: var(--color-bg-secondary);
-          padding: 2px 8px; border-radius: var(--radius-full);
-          font-size: var(--font-size-xs); font-weight: 500;
+        .status-badge.badge-published {
+          background: #16a34a; color: #fff;
+          box-shadow: 0 1px 4px rgba(22,163,74,.25);
         }
+        .status-badge.badge-published:hover:not(:disabled) {
+          background: #15803d;
+          transform: scale(1.03);
+          box-shadow: 0 2px 10px rgba(22,163,74,.35);
+        }
+        .status-badge.badge-draft {
+          background: #eab308; color: #422006;
+          box-shadow: 0 1px 4px rgba(234,179,8,.25);
+        }
+        .status-badge.badge-draft:hover:not(:disabled) {
+          background: #d97706;
+          transform: scale(1.03);
+          box-shadow: 0 2px 10px rgba(234,179,8,.35);
+        }
+        .status-badge.badge-archived {
+          background: #6b7280; color: #fff;
+          box-shadow: 0 1px 4px rgba(107,114,128,.25);
+        }
+        .status-badge.badge-archived:hover:not(:disabled) {
+          background: #4b5563;
+          transform: scale(1.03);
+        }
+        .status-badge:disabled { cursor: default; opacity: .7; }
+        .badge-toggling { animation: badgePulse .6s ease-in-out infinite alternate; }
+        @keyframes badgePulse { from { opacity: .7; } to { opacity: 1; } }
+        .badge-spinner {
+          width: 12px; height: 12px;
+          border: 2px solid rgba(255,255,255,.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: badgeSpin .5s linear infinite;
+        }
+        @keyframes badgeSpin { to { transform: rotate(360deg); } }
         .chapter-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
         .chapter-list { display: grid; gap: var(--space-2); }
-        .chapter-row { display: grid; grid-template-columns: 28px minmax(180px, 1fr) 110px 110px 36px; gap: var(--space-2); align-items: center; }
+        .chapter-row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+        .chapter-row .chapter-number { flex: 0 0 28px; }
+        .chapter-row .input:first-of-type { flex: 1 1 140px; min-width: 100px; }
+        .chapter-row .chapter-time { flex: 0 0 100px; }
+        .chapter-remove { flex: 0 0 36px; }
         .chapter-number { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--color-primary-alpha); color: var(--color-primary-dark); font-size: 12px; font-weight: 700; }
         .chapter-time { font-variant-numeric: tabular-nums; }
         .chapter-remove { width: 36px; height: 36px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-error); cursor: pointer; font-size: 20px; }
@@ -1216,13 +1360,7 @@ export default function KathasAdminPage() {
         }
         .pagination-active:hover { color: white; }
         .pagination-ellipsis { color: var(--color-text-muted); padding: 0 2px; font-size: var(--font-size-sm); }
-        @media (max-width: 760px) {
-          .chapter-row { grid-template-columns: 28px 1fr 36px; }
-          .chapter-time { grid-column: span 1; }
-          .chapter-row .chapter-time:first-of-type { grid-column: 2; }
-        }
         @media (max-width: 640px) {
-          .admin-form-grid { grid-template-columns: 1fr; }
           .admin-page { padding: var(--space-4); }
           .pagination-bar { flex-wrap: wrap; }
         }

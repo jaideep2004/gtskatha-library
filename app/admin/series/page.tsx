@@ -14,6 +14,8 @@ interface Series {
   featured: boolean;
   sortOrder: number;
   thumbnail?: string;
+  audioCount?: number;
+  videoCount?: number;
 }
 
 interface FormState {
@@ -178,19 +180,20 @@ export default function SeriesAdminPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Artwork</th><th>Title</th><th>Slug</th><th>Sort</th><th>Featured</th><th>Actions</th>
+                <th>Artwork</th><th>Title</th><th>Audio</th><th>Video</th><th>Sort</th><th>Featured</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {series.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No series yet.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No series yet.</td></tr>
               ) : series.map((s) => (
                 <tr key={s._id}>
                   <td>
                     <AdminThumbnail folder="series" value={s.thumbnail} alt={`${s.title} thumbnail`} />
                   </td>
                   <td style={{ fontWeight: 500 }}>{s.title}</td>
-                  <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.slug}</code></td>
+                  <td><span className="badge badge-audio">{s.audioCount ?? '—'}</span></td>
+                  <td><span className="badge badge-video">{s.videoCount ?? '—'}</span></td>
                   <td>{s.sortOrder}</td>
                   <td>{s.featured ? <span className="badge badge-primary">Yes</span> : <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>No</span>}</td>
                   <td>

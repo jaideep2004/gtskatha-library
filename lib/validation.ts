@@ -138,6 +138,7 @@ export function validateKathaInput(value: unknown, partial = false) {
     allowDownload: booleanField(source, 'allowDownload'),
     status,
     authorName: stringField(source, 'authorName', { max: 180 }),
+    sortOrder: numberField(source, 'sortOrder', { min: 0, max: 100_000 }),
     keyTakeaways: stringArrayField(source, 'keyTakeaways', 30, 500),
     references: stringArrayField(source, 'references', 50, 1_000),
     chapters: chaptersField(source),

@@ -200,6 +200,7 @@ export async function createKatha(data: Partial<{
   published: boolean;
   status: 'draft' | 'published' | 'archived';
   allowDownload: boolean;
+  sortOrder: number;
 }>) {
   await connectDB();
   if (!data.status) data.status = data.published ? 'published' : 'draft';
@@ -273,6 +274,15 @@ export async function updateKatha(slug: string, data: Record<string, unknown>) {
 
 export async function archiveKatha(slug: string) {
   await connectDB();
+  const katha = await Katha.findOne({ slug });
+  if (!katha) return null;
+
+  await Promise.all([
+    deleteMediaIfPresent(katha.audioUrl, 'audio'),
+    deleteMediaIfPresent(katha.videoUrl, 'video'),
+    deleteMediaIfPresent(katha.thumbnail, 'thumbnails'),
+  ]);
+
   return Katha.findOneAndUpdate(
     { slug },
     {
@@ -280,6 +290,9 @@ export async function archiveKatha(slug: string) {
         status: 'archived',
         published: false,
         archivedAt: new Date(),
+        audioUrl: undefined,
+        videoUrl: undefined,
+        thumbnail: undefined,
       },
     },
     { returnDocument: "after" }
@@ -473,7 +486,7 @@ export async function reorderKathas(ids: string[]) {
   return { reordered: validIds.length };
 }
 
-export async function bulkArchiveKathas(ids: string[]) {
+export async function bulkPublishKathas(ids: string[], published: boolean) {
   await connectDB();
   const objectIds = ids
     .filter((id) => mongoose.Types.ObjectId.isValid(id))
@@ -481,8 +494,32 @@ export async function bulkArchiveKathas(ids: string[]) {
   if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
 
   const result = await Katha.updateMany(
+    { _id: { $in: objectIds } },
+    { $set: { published, status: published ? 'published' : 'draft' } }
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+export async function bulkArchiveKathas(ids: string[]) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const kathas = await Katha.find({ _id: { $in: objectIds }, status: { $ne: 'archived' } });
+  await Promise.all(
+    kathas.flatMap((k) => [
+      deleteMediaIfPresent(k.audioUrl, 'audio'),
+      deleteMediaIfPresent(k.videoUrl, 'video'),
+      deleteMediaIfPresent(k.thumbnail, 'thumbnails'),
+    ])
+  );
+
+  const result = await Katha.updateMany(
     { _id: { $in: objectIds }, status: { $ne: 'archived' } },
-    { $set: { status: 'archived', published: false, archivedAt: new Date() } }
+    { $set: { status: 'archived', published: false, archivedAt: new Date(), audioUrl: undefined, videoUrl: undefined, thumbnail: undefined } }
   );
 
   return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };

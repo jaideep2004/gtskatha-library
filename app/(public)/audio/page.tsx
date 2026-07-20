@@ -17,7 +17,7 @@ interface Props {
 
 export default async function AudioPage({ searchParams }: Props) {
   const params = await searchParams;
-  const sort = (params.sort as 'newest' | 'oldest' | 'popular' | 'featured') ?? 'newest';
+  const sort = (params.sort as 'newest' | 'oldest' | 'popular' | 'featured' | 'manual') ?? (params.series ? 'manual' : 'newest');
   const page = Math.max(1, Number(params.page) || 1);
   const [result, categories, series] = await Promise.all([
     getKathas({ q: params.q, type: 'audio', category: params.category, series: params.series, sort, page, limit: 12 }),

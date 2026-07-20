@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { IKatha } from '@/types';
 import { formatDuration, formatDate } from '@/lib/utils';
 import Skeleton from '@/components/ui/Skeleton';
@@ -10,6 +13,35 @@ interface RecentlyAddedProps {
 }
 
 export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = trackRef.current?.parentElement;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current?.parentElement;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    return () => el.removeEventListener('scroll', checkScroll);
+  }, [checkScroll]);
+
+  useEffect(() => { checkScroll(); }, [checkScroll, kathas]);
+
+  function scroll(dir: 'left' | 'right') {
+    const el = trackRef.current?.parentElement;
+    if (!el) return;
+    const card = trackRef.current?.firstElementChild;
+    const step = (card as HTMLElement)?.offsetWidth ?? 260;
+    el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
+  }
+
   const displayKathas = kathas ?? [];
 
   if (isLoading) {
@@ -34,12 +66,34 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
       <div className="container">
         <div className="section-header">
           <h2 className="section-title">ਨਵੀਂ ਜੋੜੀ ਗਈ ਕਥਾ</h2>
-          <Link href="/search?sort=newest" className="section-link">
-            ਸਭ ਵੇਖੋ
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </Link>
+          <div className="ra-header-actions">
+            <button
+              className="ra-nav-btn"
+              disabled={!canScrollLeft}
+              onClick={() => scroll('left')}
+              aria-label="Previous"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6"/>
+              </svg>
+            </button>
+            <button
+              className="ra-nav-btn"
+              disabled={!canScrollRight}
+              onClick={() => scroll('right')}
+              aria-label="Next"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+            <Link href="/search?sort=newest" className="section-link">
+              ਸਭ ਵੇਖੋ
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </Link>
+          </div>
         </div>
 
         {displayKathas.length === 0 ? (
@@ -48,7 +102,7 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
           </div>
         ) : (
           <div className="ra-scroll scroll-x">
-            <div className="ra-track stagger-children">
+            <div className="ra-track stagger-children" ref={trackRef}>
               {displayKathas.map((katha, idx) => (
                 <Link
                   key={katha._id}
@@ -121,6 +175,9 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
           padding-left: var(--space-6);
           padding-right: var(--space-6);
           scroll-snap-type: x proximity;
+          scrollbar-width: none;
+        }
+        .ra-scroll::-webkit-scrollbar { display: none; }
         }
 
         .ra-track {
@@ -349,11 +406,67 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
           font-size: var(--font-size-sm);
         }
 
+        .section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-4);
+          margin-bottom: var(--space-5);
+        }
+
+        .ra-header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .ra-nav-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid var(--color-border);
+          background: var(--color-surface);
+          color: var(--color-text-secondary);
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          transition: border-color 180ms ease, color 180ms ease, opacity 180ms ease;
+          flex-shrink: 0;
+        }
+
+        .ra-nav-btn:hover:not(:disabled) {
+          border-color: var(--color-primary);
+          color: var(--color-primary);
+        }
+
+        .ra-nav-btn:disabled {
+          opacity: .3;
+          cursor: default;
+        }
+
+        .section-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: var(--font-size-sm);
+          font-weight: 600;
+          color: var(--color-primary-dark);
+          text-decoration: none;
+          white-space: nowrap;
+          transition: color 180ms ease;
+          flex-shrink: 0;
+        }
+
+        .section-link:hover {
+          color: var(--color-primary);
+        }
+
         @media (max-width: 640px) {
           .ra-card { width: 238px; }
           .ra-thumb { height: 158px; }
           .ra-info { min-height: 132px; padding: 16px; }
           .ra-title { font-size: 18px; }
+          .ra-nav-btn { display: none; }
         }
 
         @media (prefers-reduced-motion: reduce) {

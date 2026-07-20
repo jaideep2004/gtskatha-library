@@ -10,8 +10,11 @@ import { getThumbnailUrl } from '@/lib/utils';
 import { getMediaUrl } from '@/lib/media';
 import { serializeForClient } from '@/lib/serialize';
 
+const PAGE_LIMIT = 20;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -29,23 +32,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function SeriesDetailPage({ params }: PageProps) {
+export default async function SeriesDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const page = Math.max(1, Number(sp.page) || 1);
 
   let series: ISeries | null = null;
-  let kathas: IKatha[] = [];
+  let allKathas: IKatha[] = [];
+  let pageKathas: IKatha[] = [];
+  let totalKathas = 0;
+  let totalPages = 1;
 
   try {
     const rawSeries = await getSeriesBySlug(slug) as ISeries | null;
     series = rawSeries ? serializeForClient(rawSeries) : null;
     if (!series) notFound();
 
-    const result = await getKathas({
+    const allResult = await getKathas({
       series: (series as ISeries & { _id: string })._id,
       sort: 'manual',
-      limit: 100,
+      limit: 5000,
     });
-    kathas = serializeForClient(result.data) as unknown as IKatha[];
+    allKathas = serializeForClient(allResult.data) as unknown as IKatha[];
+    totalKathas = allResult.total ?? allKathas.length;
+    totalPages = Math.max(1, Math.ceil(totalKathas / PAGE_LIMIT));
+    const start = (page - 1) * PAGE_LIMIT;
+    pageKathas = allKathas.slice(start, start + PAGE_LIMIT);
   } catch {
     if (!series) notFound();
   }
@@ -96,12 +108,12 @@ export default async function SeriesDetailPage({ params }: PageProps) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
                 </svg>
-                {kathas.length} {kathas.length === 1 ? 'ਅਧਿਆਇ' : 'ਅਧਿਆਇ'}
+                {totalKathas} {totalKathas === 1 ? 'ਅਧਿਆਇ' : 'ਅਧਿਆਇ'}
               </span>
             </div>
 
-            {kathas.length > 0 && (
-              <PlaySeriesButton kathas={kathas} />
+            {allKathas.length > 0 && (
+              <PlaySeriesButton kathas={allKathas} />
             )}
           </div>
         </div>
@@ -110,11 +122,26 @@ export default async function SeriesDetailPage({ params }: PageProps) {
         <div className="series-episodes">
           <div className="series-episodes-header">
             <h2>ਅਧਿਆਇ</h2>
-            <span className="series-episodes-count">{kathas.length} ਕੁੱਲ</span>
+            <span className="series-episodes-count">{totalKathas} ਕੁੱਲ</span>
           </div>
 
-          {kathas.length > 0 ? (
-            <KathaList kathas={kathas} />
+          {pageKathas.length > 0 ? (
+            <>
+              <KathaList kathas={pageKathas} />
+              {totalPages > 1 && (
+                <div className="series-pagination">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <a
+                      key={p}
+                      href={p === 1 ? `/series/${slug}` : `/series/${slug}?page=${p}`}
+                      className={`series-page-btn${p === page ? ' series-page-active' : ''}`}
+                    >
+                      {p}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <div className="empty-state">
               <div className="empty-state-icon">🎵</div>
@@ -227,6 +254,35 @@ export default async function SeriesDetailPage({ params }: PageProps) {
         .empty-state-icon { font-size: 48px; margin-bottom: var(--space-4); }
         .empty-state h3 { margin-bottom: var(--space-3); }
         .empty-state p { color: var(--color-text-muted); }
+
+        .series-pagination {
+          display: flex;
+          justify-content: center;
+          gap: var(--space-2);
+          margin-top: var(--space-6);
+          flex-wrap: wrap;
+        }
+        .series-page-btn {
+          width: 36px;
+          height: 36px;
+          display: grid;
+          place-items: center;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          background: var(--color-surface);
+          color: var(--color-text-primary);
+          font-size: var(--font-size-sm);
+          cursor: pointer;
+          text-decoration: none;
+          transition: border-color 180ms ease, color 180ms ease;
+        }
+        .series-page-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .series-page-active {
+          background: var(--color-primary);
+          color: white !important;
+          border-color: var(--color-primary);
+          font-weight: 600;
+        }
 
         @media (max-width: 768px) {
           .series-detail-header { flex-direction: column; }

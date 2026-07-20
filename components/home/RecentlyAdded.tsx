@@ -178,7 +178,6 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
           scrollbar-width: none;
         }
         .ra-scroll::-webkit-scrollbar { display: none; }
-        }
 
         .ra-track {
           display: flex;

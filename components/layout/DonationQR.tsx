@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function DonationQR() {
+  const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
+
+  const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard');
+  if (isAdmin) return null;
 
   return (
     <div className={`donation-qr-wrap ${expanded ? 'expanded' : ''}`}>

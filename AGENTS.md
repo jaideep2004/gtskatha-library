@@ -5,7 +5,7 @@
 * Production-grade only
 * Scalability + maintainability first
 * Analyze before coding
-* Verify before concluding
+* Verify before concluding....
 * Never assume unknown facts
 * Prefer explicit architecture over implicit behavior
 

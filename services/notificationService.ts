@@ -39,6 +39,14 @@ export async function markAsRead(userId: string, notificationId: string) {
   );
 }
 
+export async function deleteNotification(id: string) {
+  await connectDB();
+  const notification = await Notification.findByIdAndDelete(id);
+  if (!notification) return null;
+  await UserNotification.deleteMany({ notificationId: id });
+  return notification;
+}
+
 export async function getUnreadCount(userId: string): Promise<number> {
   await connectDB();
   const [total, read] = await Promise.all([

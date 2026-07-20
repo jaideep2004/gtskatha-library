@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import ToastProvider from '@/components/ui/ToastProvider';
+import DonationQR from '@/components/layout/DonationQR';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
@@ -35,6 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        <DonationQR />
         <ToastProvider />
       </body>
     </html>

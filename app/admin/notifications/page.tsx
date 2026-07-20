@@ -35,6 +35,7 @@ export default function NotificationsAdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(empty);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -75,6 +76,25 @@ export default function NotificationsAdminPage() {
       toast.error('Network error while sending notification.');
     }
     finally { setSaving(false); }
+  }
+
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`Delete "${title}"?`)) return;
+    setDeleting((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Notification deleted.');
+        load();
+      } else {
+        toast.error(data.error ?? 'Failed to delete.');
+      }
+    } catch {
+      toast.error('Failed to delete notification.');
+    } finally {
+      setDeleting((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    }
   }
 
   return (
@@ -143,11 +163,19 @@ export default function NotificationsAdminPage() {
                 <span className="notif-title">{n.title}</span>
                 <span className="notif-msg">{n.message}</span>
               </div>
-              <div className="notif-meta">
-                <span className={`badge badge-${n.type === 'success' ? 'success' : 'primary'}`}>{n.type}</span>
-                <span className="notif-date">{formatDate(new Date(n.createdAt))}</span>
+                <div className="notif-meta">
+                  <span className={`badge badge-${n.type === 'success' ? 'success' : 'primary'}`}>{n.type}</span>
+                  <span className="notif-date">{formatDate(new Date(n.createdAt))}</span>
+                  <button
+                    className="notif-delete"
+                    disabled={deleting.has(n._id)}
+                    onClick={() => handleDelete(n._id, n.title)}
+                    aria-label={`Delete ${n.title}`}
+                  >
+                    {deleting.has(n._id) ? '…' : '×'}
+                  </button>
+                </div>
               </div>
-            </div>
           ))}
         </div>
       )}
@@ -166,6 +194,9 @@ export default function NotificationsAdminPage() {
         .notif-msg { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
         .notif-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
         .notif-date { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+        .notif-delete { width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface); color: var(--color-error); cursor: pointer; font-size: 16px; display: grid; place-items: center; transition: background 140ms ease, border-color 140ms ease; margin-top: 4px; }
+        .notif-delete:hover { background: rgba(239,68,68,0.08); border-color: var(--color-error); }
+        .notif-delete:disabled { opacity: 0.4; cursor: not-allowed; }
         .empty-state { text-align: center; padding: var(--space-16) 0; }
         @media (max-width: 640px) { .admin-page { padding: var(--space-4); } .notif-item { flex-direction: column; align-items: flex-start; } }
       `}</style>

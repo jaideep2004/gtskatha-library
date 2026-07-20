@@ -205,9 +205,12 @@ export default function BulkAudioKathaUpload({
     }
   }
 
-  async function createReadyKathas(ready: AudioDraft[], sortOffset: number): Promise<number> {
-    if (!ready.length) return 0;
+  async function createReadyKathas(readyInput: AudioDraft[], sortOffset: number): Promise<number> {
+    if (!readyInput.length) return 0;
 
+    const ready = [...readyInput].sort((a, b) =>
+      a.audioFile.name.localeCompare(b.audioFile.name, undefined, { numeric: true })
+    );
     ready.forEach((draft) => updateDraft(draft.id, { status: 'creating', error: undefined }));
     const response = await fetch('/api/kathas/bulk', {
       method: 'POST',
@@ -287,7 +290,19 @@ export default function BulkAudioKathaUpload({
     abortRef.current = controller;
     const thumbnailUploads = new Map<File, Promise<string>>();
     const batches = splitIntoBatches(candidates, MAX_BATCH_SIZE);
+
     let createdCount = 0;
+    if (seriesId) {
+      try {
+        const res = await fetch(`/api/kathas?series=${encodeURIComponent(seriesId)}&sort=manual&limit=1000&page=1`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const items = json.data as Array<{ sortOrder?: number }>;
+          const maxSort = items.reduce((max, k) => Math.max(max, k.sortOrder ?? 0), 0);
+          createdCount = maxSort + 1;
+        }
+      } catch {}
+    }
 
     try {
       for (const [index, batch] of batches.entries()) {

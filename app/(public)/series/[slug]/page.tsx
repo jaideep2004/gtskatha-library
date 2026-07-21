@@ -1,20 +1,18 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import KathaList from '@/components/katha/KathaList';
 import PlaySeriesButton from '@/components/series/PlaySeriesButton';
+import SeriesFolderGrid from '@/components/series/SeriesFolderGrid';
 import { getSeriesBySlug } from '@/services/seriesService';
 import { getKathas } from '@/services/kathaService';
-import { ISeries, IKatha } from '@/types';
+import { getFoldersBySeries } from '@/services/folderService';
+import { ISeries, IKatha, IFolder } from '@/types';
 import { getThumbnailUrl } from '@/lib/utils';
 import { getMediaUrl } from '@/lib/media';
 import { serializeForClient } from '@/lib/serialize';
 
-const PAGE_LIMIT = 20;
-
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -32,34 +30,42 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function SeriesDetailPage({ params, searchParams }: PageProps) {
+export default async function SeriesDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const sp = searchParams ? await searchParams : {};
-  const page = Math.max(1, Number(sp.page) || 1);
 
   let series: ISeries | null = null;
   let allKathas: IKatha[] = [];
-  let pageKathas: IKatha[] = [];
+  let folders: IFolder[] = [];
   let totalKathas = 0;
-  let totalPages = 1;
 
   try {
     const rawSeries = await getSeriesBySlug(slug) as ISeries | null;
     series = rawSeries ? serializeForClient(rawSeries) : null;
     if (!series) notFound();
 
-    const allResult = await getKathas({
-      series: (series as ISeries & { _id: string })._id,
-      sort: 'manual',
-      limit: 5000,
-    });
-    allKathas = serializeForClient(allResult.data) as unknown as IKatha[];
-    totalKathas = allResult.total ?? allKathas.length;
-    totalPages = Math.max(1, Math.ceil(totalKathas / PAGE_LIMIT));
-    const start = (page - 1) * PAGE_LIMIT;
-    pageKathas = allKathas.slice(start, start + PAGE_LIMIT);
+    const seriesId = (series as ISeries & { _id: string })._id;
+
+    const [kathaResult, rawFolders] = await Promise.all([
+      getKathas({ series: seriesId, sort: 'manual', limit: 5000, includeUnpublished: true }),
+      getFoldersBySeries(seriesId),
+    ]);
+    allKathas = serializeForClient(kathaResult.data) as unknown as IKatha[];
+    totalKathas = kathaResult.total ?? allKathas.length;
+    folders = serializeForClient(rawFolders) as unknown as IFolder[];
   } catch {
     if (!series) notFound();
+  }
+
+  const folderMap = new Map<string, IKatha[]>();
+  const uncategorized: IKatha[] = [];
+  for (const k of allKathas) {
+    if (k.folderId) {
+      const list = folderMap.get(k.folderId) ?? [];
+      list.push(k);
+      folderMap.set(k.folderId, list);
+    } else {
+      uncategorized.push(k);
+    }
   }
 
   const thumbSrc = series!.thumbnail
@@ -77,7 +83,6 @@ export default async function SeriesDetailPage({ params, searchParams }: PagePro
           <span>{series!.title}</span>
         </nav>
 
-        {/* Series header */}
         <div className="series-detail-header">
           <div className="series-detail-thumb">
             {thumbSrc ? (
@@ -118,30 +123,19 @@ export default async function SeriesDetailPage({ params, searchParams }: PagePro
           </div>
         </div>
 
-        {/* Episodes */}
         <div className="series-episodes">
           <div className="series-episodes-header">
             <h2>ਅਧਿਆਇ</h2>
             <span className="series-episodes-count">{totalKathas} ਕੁੱਲ</span>
           </div>
 
-          {pageKathas.length > 0 ? (
-            <>
-              <KathaList kathas={pageKathas} />
-              {totalPages > 1 && (
-                <div className="series-pagination">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <a
-                      key={p}
-                      href={p === 1 ? `/series/${slug}` : `/series/${slug}?page=${p}`}
-                      className={`series-page-btn${p === page ? ' series-page-active' : ''}`}
-                    >
-                      {p}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </>
+          {allKathas.length > 0 ? (
+            <SeriesFolderGrid
+              slug={slug}
+              folders={folders}
+              folderMap={Object.fromEntries(folderMap)}
+              uncategorized={uncategorized}
+            />
           ) : (
             <div className="empty-state">
               <div className="empty-state-icon">🎵</div>
@@ -254,35 +248,6 @@ export default async function SeriesDetailPage({ params, searchParams }: PagePro
         .empty-state-icon { font-size: 48px; margin-bottom: var(--space-4); }
         .empty-state h3 { margin-bottom: var(--space-3); }
         .empty-state p { color: var(--color-text-muted); }
-
-        .series-pagination {
-          display: flex;
-          justify-content: center;
-          gap: var(--space-2);
-          margin-top: var(--space-6);
-          flex-wrap: wrap;
-        }
-        .series-page-btn {
-          width: 36px;
-          height: 36px;
-          display: grid;
-          place-items: center;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          background: var(--color-surface);
-          color: var(--color-text-primary);
-          font-size: var(--font-size-sm);
-          cursor: pointer;
-          text-decoration: none;
-          transition: border-color 180ms ease, color 180ms ease;
-        }
-        .series-page-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-        .series-page-active {
-          background: var(--color-primary);
-          color: white !important;
-          border-color: var(--color-primary);
-          font-weight: 600;
-        }
 
         @media (max-width: 768px) {
           .series-detail-header { flex-direction: column; }

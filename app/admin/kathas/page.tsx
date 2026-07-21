@@ -26,7 +26,8 @@ interface Katha {
   videoUrl?: string;
   thumbnail?: string;
   categoryId?: string | { _id: string; name?: string; slug?: string };
-  seriesId?: string | { _id: string };
+  seriesId?: string | { _id: string; title?: string };
+  folderId?: string;
   keyTakeaways?: string[];
   references?: string[];
   chapters?: ChapterForm[];
@@ -121,6 +122,15 @@ export default function KathasAdminPage() {
   const [bulkTitlesMode, setBulkTitlesMode] = useState(false);
   const [bulkTitlesMap, setBulkTitlesMap] = useState<Record<string, string>>({});
   const [bulkTitlesSaving, setBulkTitlesSaving] = useState(false);
+  const [bulkFolderMode, setBulkFolderMode] = useState(false);
+  const [bulkFolderOptions, setBulkFolderOptions] = useState<RelationOption[]>([]);
+  const [bulkFolderSelected, setBulkFolderSelected] = useState('');
+  const [bulkFolderLoading, setBulkFolderLoading] = useState(false);
+  const [bulkFolderSaving, setBulkFolderSaving] = useState(false);
+  const [bulkCategoryMode, setBulkCategoryMode] = useState(false);
+  const [bulkCategorySelected, setBulkCategorySelected] = useState('');
+  const [bulkCategorySaving, setBulkCategorySaving] = useState(false);
+  const [folderLookup, setFolderLookup] = useState<Record<string, string>>({});
 
   const loadKathas = useCallback(async () => {
     setLoading(true);
@@ -131,15 +141,17 @@ export default function KathasAdminPage() {
         page: String(page),
       });
       if (statusFilter) params.set('status', statusFilter);
-      const [kathaRes, categoryRes, seriesRes] = await Promise.all([
+      const [kathaRes, categoryRes, seriesRes, folderRes] = await Promise.all([
         fetch(`/api/kathas?${params.toString()}`),
         fetch('/api/categories'),
         fetch('/api/series'),
+        fetch('/api/folders'),
       ]);
-      const [data, categoryData, seriesData] = await Promise.all([
+      const [data, categoryData, seriesData, folderData] = await Promise.all([
         kathaRes.json(),
         categoryRes.json(),
         seriesRes.json(),
+        folderRes.json(),
       ]);
       if (data.success) {
         setKathas(data.data);
@@ -151,6 +163,13 @@ export default function KathasAdminPage() {
       }
       if (categoryData.success) setCategories(categoryData.data);
       if (seriesData.success) setSeriesOptions(seriesData.data);
+      if (folderData.success) {
+        const lookup: Record<string, string> = {};
+        for (const f of folderData.data as { _id: string; title: string }[]) {
+          lookup[f._id] = f.title;
+        }
+        setFolderLookup(lookup);
+      }
     } catch {
       // ignore
     } finally {
@@ -322,6 +341,17 @@ export default function KathasAdminPage() {
     if (!katha.categoryId) return '—';
     if (typeof katha.categoryId === 'object') return katha.categoryId.name ?? '—';
     return categories.find((category) => category._id === katha.categoryId)?.name ?? '—';
+  }
+
+  function getSeriesName(katha: Katha) {
+    if (!katha.seriesId) return null;
+    if (typeof katha.seriesId === 'object') return katha.seriesId.title ?? null;
+    return seriesOptions.find((s) => s._id === katha.seriesId)?.title ?? null;
+  }
+
+  function getFolderName(katha: Katha) {
+    if (!katha.folderId) return null;
+    return folderLookup[katha.folderId] ?? null;
   }
 
   function toggleSelect(id: string) {
@@ -836,7 +866,7 @@ export default function KathasAdminPage() {
                   </button>
                 </div>
               )}
-              {!bulkTitlesMode && (
+              {!bulkTitlesMode && !bulkFolderMode && (
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => {
@@ -849,6 +879,46 @@ export default function KathasAdminPage() {
                   }}
                 >
                   Edit Titles
+                </button>
+              )}
+              {!bulkTitlesMode && !bulkFolderMode && !bulkCategoryMode && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setBulkCategoryMode(true);
+                    setBulkCategorySelected('');
+                  }}
+                >
+                  Set Category
+                </button>
+              )}
+              {!bulkTitlesMode && !bulkFolderMode && !bulkCategoryMode && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={async () => {
+                    const selected = kathas.filter((k) => selectedIds.has(k._id));
+                    const seriesIds = new Set(selected.map((k) => typeof k.seriesId === 'object' ? k.seriesId._id : k.seriesId).filter(Boolean));
+                    if (seriesIds.size !== 1) {
+                      toast.error('All selected kathas must be in the same series.');
+                      return;
+                    }
+                    const sid = seriesIds.values().next().value as string;
+                    setBulkFolderLoading(true);
+                    setBulkFolderMode(true);
+                    setBulkFolderSelected('');
+                    try {
+                      const res = await fetch(`/api/folders?series=${sid}`);
+                      const data = await res.json();
+                      if (data.success) setBulkFolderOptions(data.data);
+                      else setBulkFolderOptions([]);
+                    } catch {
+                      setBulkFolderOptions([]);
+                    } finally {
+                      setBulkFolderLoading(false);
+                    }
+                  }}
+                >
+                  Move to Folder
                 </button>
               )}
               <button
@@ -935,6 +1005,118 @@ export default function KathasAdminPage() {
               </div>
             </div>
           )}
+          {bulkCategoryMode && (
+            <div className="bulk-bar">
+              <span className="bulk-count">{selectedIds.size} selected</span>
+              <select
+                className="input"
+                value={bulkCategorySelected}
+                onChange={(e) => setBulkCategorySelected(e.target.value)}
+                style={{ width: 200 }}
+              >
+                <option value="">No category</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name ?? c.title}</option>
+                ))}
+              </select>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={bulkCategorySaving}
+                onClick={async () => {
+                  setBulkCategorySaving(true);
+                  try {
+                    const res = await fetch('/api/kathas/bulk', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        ids: Array.from(selectedIds),
+                        categoryId: bulkCategorySelected || undefined,
+                        categoryIdPresent: true,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      toast.success(data.message);
+                      setBulkCategoryMode(false);
+                      setBulkCategorySelected('');
+                      setSelectedIds(new Set());
+                      loadKathas();
+                    } else {
+                      toast.error(data.error ?? 'Failed to set category.');
+                    }
+                  } catch {
+                    toast.error('Failed to set category.');
+                  } finally {
+                    setBulkCategorySaving(false);
+                  }
+                }}
+              >
+                {bulkCategorySaving ? 'Saving…' : 'Apply Category'}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setBulkCategoryMode(false)}>
+                Cancel
+              </button>
+            </div>
+          )}
+          {bulkFolderMode && (
+            <div className="bulk-bar">
+              <span className="bulk-count">{selectedIds.size} selected</span>
+              {bulkFolderLoading ? (
+                <span>Loading folders…</span>
+              ) : (
+                <>
+                  <select
+                    className="input"
+                    value={bulkFolderSelected}
+                    onChange={(e) => setBulkFolderSelected(e.target.value)}
+                    style={{ width: 200 }}
+                  >
+                    <option value="">No folder</option>
+                    {bulkFolderOptions.map((f) => (
+                      <option key={f._id} value={f._id}>{f.title}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={bulkFolderSaving}
+                    onClick={async () => {
+                      setBulkFolderSaving(true);
+                      try {
+                        const res = await fetch('/api/kathas/bulk', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            ids: Array.from(selectedIds),
+                            folderId: bulkFolderSelected || undefined,
+                            folderIdPresent: true,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          toast.success(data.message);
+                          setBulkFolderMode(false);
+                          setBulkFolderSelected('');
+                          setSelectedIds(new Set());
+                          loadKathas();
+                        } else {
+                          toast.error(data.error ?? 'Failed to set folder.');
+                        }
+                      } catch {
+                        toast.error('Failed to set folder.');
+                      } finally {
+                        setBulkFolderSaving(false);
+                      }
+                    }}
+                  >
+                    {bulkFolderSaving ? 'Saving…' : 'Apply Folder'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setBulkFolderMode(false)}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {reorderMode && (
             <div className="reorder-bar">
               <span>Drag rows to reorder. {reorderIds.length} items.</span>
@@ -995,6 +1177,7 @@ export default function KathasAdminPage() {
                   <th>Title</th>
                   <th>Type</th>
                   <th>Category</th>
+                  <th>Series / Folder</th>
                   <th>Duration</th>
                   <th>Views</th>
                   <th>Status</th>
@@ -1005,7 +1188,7 @@ export default function KathasAdminPage() {
               <tbody>
                 {kathas.length === 0 ? (
                   <tr>
-                    <td colSpan={reorderMode ? 10 : 11} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
+                    <td colSpan={reorderMode ? 11 : 12} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>
                       No kathas yet. Add your first one!
                     </td>
                   </tr>
@@ -1052,6 +1235,13 @@ export default function KathasAdminPage() {
                     <td><div className="admin-table-title">{k!.title}</div>{k!.featured && <span className="badge badge-primary" style={{ fontSize: 10 }}>Featured</span>}</td>
                     <td><span className={`badge badge-${k!.type}`}>{k!.type}</span></td>
                     <td><span className="category-cell">{getCategoryName(k!)}</span></td>
+                    <td>
+                      <div className="series-folder-cell">
+                        {getSeriesName(k!) && <span className="series-cell">{getSeriesName(k!)}</span>}
+                        {getFolderName(k!) && <span className="folder-cell">{getFolderName(k!)}</span>}
+                        {!getSeriesName(k!) && !getFolderName(k!) && <span className="cell-muted">—</span>}
+                      </div>
+                    </td>
                     <td>{k!.duration ? formatDuration(k!.duration) : '—'}</td>
                     <td>{k!.views.toLocaleString()}</td>
                     <td>
@@ -1093,6 +1283,13 @@ export default function KathasAdminPage() {
                       <span className={`badge badge-${k.type}`}>{k.type}</span>
                     </td>
                     <td><span className="category-cell">{getCategoryName(k)}</span></td>
+                    <td>
+                      <div className="series-folder-cell">
+                        {getSeriesName(k) && <span className="series-cell">{getSeriesName(k)}</span>}
+                        {getFolderName(k) && <span className="folder-cell">{getFolderName(k)}</span>}
+                        {!getSeriesName(k) && !getFolderName(k) && <span className="cell-muted">—</span>}
+                      </div>
+                    </td>
                     <td>{k.duration ? formatDuration(k.duration) : '—'}</td>
                     <td>{k.views.toLocaleString()}</td>
                     <td>
@@ -1128,8 +1325,9 @@ export default function KathasAdminPage() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="pagination-bar">
+          <div className="pagination-bar">
+            <span className="pagination-total">{total.toLocaleString()} total</span>
+            <div className="pagination-controls">
               <button
                 className="btn btn-ghost btn-sm"
                 disabled={page <= 1}
@@ -1137,21 +1335,23 @@ export default function KathasAdminPage() {
               >
                 ← Previous
               </button>
-              <div className="pagination-pages">
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-                  .map((p, idx, arr) => (
-                    <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                      {idx > 0 && arr[idx - 1] !== p - 1 && <span className="pagination-ellipsis">…</span>}
-                      <button
-                        className={`pagination-btn ${p === page ? 'pagination-active' : ''}`}
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </button>
-                    </span>
-                  ))}
-              </div>
+              {totalPages > 1 && (
+                <div className="pagination-pages">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                    .map((p, idx, arr) => (
+                      <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                        {idx > 0 && arr[idx - 1] !== p - 1 && <span className="pagination-ellipsis">…</span>}
+                        <button
+                          className={`pagination-btn ${p === page ? 'pagination-active' : ''}`}
+                          onClick={() => setPage(p)}
+                        >
+                          {p}
+                        </button>
+                      </span>
+                    ))}
+                </div>
+              )}
               <button
                 className="btn btn-ghost btn-sm"
                 disabled={page >= totalPages}
@@ -1160,12 +1360,16 @@ export default function KathasAdminPage() {
                 Next →
               </button>
             </div>
-          )}
+          </div>
         </>
       )}
 
       <style>{`
-        .admin-page { padding: var(--space-8); }
+        .admin-page {
+          padding: var(--space-8);
+          animation: pageFadeIn 0.3s ease;
+        }
+        @keyframes pageFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         .admin-page-header {
           display: flex; align-items: flex-start;
           justify-content: space-between;
@@ -1177,6 +1381,14 @@ export default function KathasAdminPage() {
           font-weight: 700; margin-bottom: var(--space-1);
         }
         .admin-page-sub { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+        .admin-page .input:focus,
+        .admin-page select:focus,
+        .admin-page textarea:focus {
+          outline: none;
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(217, 140, 41, 0.12);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
         .admin-form-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);animation:adminFormFadeIn 180ms ease}
         .admin-form-modal{background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:min(680px,calc(100vw - var(--space-8)));max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:adminFormPop 220ms cubic-bezier(.34,1.56,.64,1)}
         .admin-form-modal .form-group input:not([type=checkbox]),
@@ -1242,12 +1454,22 @@ export default function KathasAdminPage() {
           border-bottom: 1px solid var(--color-border);
           vertical-align: middle;
         }
+        .admin-table tr { transition: background 0.15s ease; }
         .admin-table tr:last-child td { border-bottom: none; }
         .admin-table tr:hover td { background: var(--color-bg); }
+        .admin-table tr:not(.reorder-row):not(.row-selected):hover {
+          box-shadow: inset 0 0 0 1px var(--color-primary-light);
+        }
         .row-selected td { background: var(--color-primary-alpha); }
         .admin-table-title { font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
         .category-cell { color: var(--color-text-secondary); font-size: 13px; }
         .admin-table-actions { display: flex; gap: var(--space-1); }
+        .admin-table-actions .btn {
+          transition: all 0.15s ease;
+        }
+        .admin-table-actions .btn:hover {
+          transform: translateY(-1px);
+        }
         .order-index { color: var(--color-text-muted); font-size: 12px; font-weight: 500; text-align: center; }
         .reorder-row { cursor: grab; }
         .reorder-row.dragging { opacity: 0.3; }
@@ -1323,14 +1545,17 @@ export default function KathasAdminPage() {
         .chapter-remove:hover { border-color: var(--color-error); background: rgba(239,68,68,0.06); }
         .chapter-empty { padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: var(--font-size-sm); }
         .bulk-bar {
-          display: flex; align-items: center; gap: var(--space-3);
-          padding: var(--space-3) var(--space-5);
-          background: var(--color-primary-alpha);
+          display: flex; align-items: center;
+          gap: var(--space-3); padding: var(--space-3) var(--space-5);
+          background: linear-gradient(135deg, var(--color-primary-alpha) 0%, var(--color-bg-secondary) 100%);
           border: 1px solid var(--color-primary-light);
           border-radius: var(--radius-lg);
           margin-bottom: var(--space-4);
           flex-wrap: wrap;
+          box-shadow: 0 2px 8px rgba(217, 140, 41, 0.06);
+          animation: bulkBarIn 0.25s ease;
         }
+        @keyframes bulkBarIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .bulk-count { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-primary-dark); }
         .bulk-artwork-inline { display: flex; align-items: center; gap: var(--space-3); }
         .bulk-artwork-inline .file-upload-wrap { flex-direction: row; }
@@ -1343,9 +1568,12 @@ export default function KathasAdminPage() {
         .bulk-title-label { min-width: 120px; font-size: var(--font-size-sm); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bulk-title-row .input { flex: 1; }
         .pagination-bar {
-          display: flex; align-items: center; justify-content: center;
+          display: flex; align-items: center; justify-content: space-between;
           gap: var(--space-3); margin-top: var(--space-6);
+          padding: var(--space-2) 0;
         }
+        .pagination-total { font-size: var(--font-size-sm); color: var(--color-text-muted); font-weight: 500; }
+        .pagination-controls { display: flex; align-items: center; gap: var(--space-3); }
         .pagination-pages { display: flex; align-items: center; gap: 2px; }
         .pagination-btn {
           width: 36px; height: 36px; display: grid; place-items: center;
@@ -1360,6 +1588,10 @@ export default function KathasAdminPage() {
         }
         .pagination-active:hover { color: white; }
         .pagination-ellipsis { color: var(--color-text-muted); padding: 0 2px; font-size: var(--font-size-sm); }
+        .series-folder-cell { display: flex; flex-direction: column; gap: 2px; min-width: 100px; }
+        .series-cell { font-size: var(--font-size-xs); color: var(--color-text-secondary); font-weight: 500; }
+        .folder-cell { font-size: var(--font-size-xs); color: var(--color-primary); background: var(--color-primary-alpha); padding: 1px 8px; border-radius: var(--radius-full); display: inline-block; width: fit-content; }
+        .cell-muted { color: var(--color-text-muted); }
         @media (max-width: 640px) {
           .admin-page { padding: var(--space-4); }
           .pagination-bar { flex-wrap: wrap; }

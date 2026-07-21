@@ -11,6 +11,7 @@ export interface IKathaDocument extends Document {
   duration?: number;
   categoryId?: mongoose.Types.ObjectId;
   seriesId?: mongoose.Types.ObjectId;
+  folderId?: mongoose.Types.ObjectId;
   tags: string[];
   featured: boolean;
   published: boolean;
@@ -44,6 +45,7 @@ const KathaSchema = new Schema<IKathaDocument>(
     duration: { type: Number },
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     seriesId: { type: Schema.Types.ObjectId, ref: 'Series' },
+    folderId: { type: Schema.Types.ObjectId, ref: 'Folder' },
     tags: [{ type: String, trim: true }],
     featured: { type: Boolean, default: false },
     published: { type: Boolean, default: false },
@@ -79,6 +81,7 @@ KathaSchema.index({ status: 1, createdAt: -1 });
 KathaSchema.index({ createdAt: -1 });
 KathaSchema.index({ sortOrder: 1, createdAt: -1 });
 KathaSchema.index({ seriesId: 1, sortOrder: 1, createdAt: -1 });
+KathaSchema.index({ folderId: 1, sortOrder: 1 });
 KathaSchema.index({ views: -1 });
 KathaSchema.index({ title: 'text', description: 'text', tags: 'text' });
 

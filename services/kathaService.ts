@@ -25,6 +25,7 @@ export interface BulkAudioKathaInput {
   duration?: number;
   categoryId?: string | null;
   seriesId?: string | null;
+  folderId?: string | null;
   tags?: string[];
   featured?: boolean;
   published?: boolean;
@@ -84,6 +85,7 @@ export async function getKathas(params: KathaSearchParams = {}) {
     type,
     category,
     series,
+    folder,
     page = 1,
     limit = 20,
     sort = 'newest',
@@ -112,6 +114,10 @@ export async function getKathas(params: KathaSearchParams = {}) {
     const seriesId = await resolveRelationId(Series, series);
     if (!seriesId) return emptyResult(safePage, safeLimit);
     query.seriesId = seriesId;
+  }
+  if (folder) {
+    if (!mongoose.Types.ObjectId.isValid(folder)) return emptyResult(safePage, safeLimit);
+    query.folderId = new mongoose.Types.ObjectId(folder);
   }
 
   const sortMap: Record<string, [string, 1 | -1][]> = {
@@ -195,6 +201,7 @@ export async function createKatha(data: Partial<{
   duration: number;
   categoryId: string;
   seriesId: string;
+  folderId: string;
   tags: string[];
   featured: boolean;
   published: boolean;
@@ -223,6 +230,7 @@ export async function createBulkAudioKathas(items: BulkAudioKathaInput[]) {
         ...item,
         categoryId: item.categoryId ?? undefined,
         seriesId: item.seriesId ?? undefined,
+        folderId: item.folderId ?? undefined,
         type: 'audio',
         slug,
       });
@@ -465,6 +473,44 @@ export async function bulkSetThumbnail(ids: string[], thumbnail: string) {
   const result = await Katha.updateMany(
     { _id: { $in: objectIds } },
     { $set: { thumbnail } }
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+export async function bulkSetCategory(ids: string[], categoryId: string | null) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const update = categoryId
+    ? { $set: { categoryId: new mongoose.Types.ObjectId(categoryId) } }
+    : { $unset: { categoryId: '' } };
+
+  const result = await Katha.updateMany(
+    { _id: { $in: objectIds } },
+    update
+  );
+
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+export async function bulkSetFolder(ids: string[], folderId: string | null) {
+  await connectDB();
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) throw new DomainError('No valid IDs provided', 400);
+
+  const update = folderId
+    ? { $set: { folderId } }
+    : { $unset: { folderId: '' } };
+
+  const result = await Katha.updateMany(
+    { _id: { $in: objectIds } },
+    update
   );
 
   return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };

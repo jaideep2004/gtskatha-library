@@ -38,6 +38,14 @@ export interface ISeries {
   archived?: boolean;
 }
 
+export interface IFolder {
+  _id: string;
+  seriesId: string;
+  title: string;
+  sortOrder: number;
+  kathaCount?: number;
+}
+
 export interface IKatha {
   _id: string;
   title: string;
@@ -50,6 +58,7 @@ export interface IKatha {
   duration?: number;
   categoryId?: string | ICategory;
   seriesId?: string | ISeries;
+  folderId?: string;
   tags: string[];
   featured: boolean;
   published: boolean;
@@ -148,6 +157,7 @@ export interface KathaSearchParams {
   type?: KathaType;
   category?: string;
   series?: string;
+  folder?: string;
   page?: number;
   limit?: number;
   sort?: 'newest' | 'oldest' | 'popular' | 'featured' | 'manual';

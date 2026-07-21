@@ -136,6 +136,7 @@ export function validateKathaInput(value: unknown, partial = false) {
     featured: booleanField(source, 'featured'),
     published: booleanField(source, 'published'),
     allowDownload: booleanField(source, 'allowDownload'),
+    folderId: objectIdField(source, 'folderId') as string | undefined,
     status,
     authorName: stringField(source, 'authorName', { max: 180 }),
     sortOrder: numberField(source, 'sortOrder', { min: 0, max: 100_000 }),

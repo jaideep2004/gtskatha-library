@@ -80,6 +80,8 @@ export default function BulkAudioKathaUpload({
   const [authorName, setAuthorName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [seriesId, setSeriesId] = useState('');
+  const [folderId, setFolderId] = useState('');
+  const [folders, setFolders] = useState<RelationOption[]>([]);
   const [tags, setTags] = useState('');
   const [publish, setPublish] = useState(false);
   const [allowDownload, setAllowDownload] = useState(false);
@@ -100,6 +102,15 @@ export default function BulkAudioKathaUpload({
   useEffect(() => () => {
     Object.values(artworkPreviewUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
   }, []);
+
+  useEffect(() => {
+    if (!seriesId) { setFolders([]); setFolderId(''); return; }
+    setFolderId('');
+    fetch(`/api/folders?series=${encodeURIComponent(seriesId)}`)
+      .then((res) => res.json())
+      .then((data) => { if (data.success) setFolders(data.data); })
+      .catch(() => {});
+  }, [seriesId]);
 
   function updateDraft(id: string, patch: Partial<AudioDraft>) {
     setDrafts((current) => current.map((draft) => (
@@ -225,6 +236,7 @@ export default function BulkAudioKathaUpload({
           authorName: authorName || undefined,
           categoryId: categoryId || undefined,
           seriesId: seriesId || undefined,
+          folderId: folderId || undefined,
           tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
           published: publish,
           allowDownload,
@@ -368,6 +380,9 @@ export default function BulkAudioKathaUpload({
             <label>Speaker<input value={authorName} disabled={running} onChange={(event) => setAuthorName(event.target.value)} placeholder="Applied to all" /></label>
             <label>Category<select value={categoryId} disabled={running} onChange={(event) => setCategoryId(event.target.value)}><option value="">None</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}</select></label>
             <label>Series<select value={seriesId} disabled={running} onChange={(event) => setSeriesId(event.target.value)}><option value="">None</option>{series.map((item) => <option key={item._id} value={item._id}>{item.title}</option>)}</select></label>
+            {seriesId && (
+              <label>Folder<select value={folderId} disabled={running} onChange={(event) => setFolderId(event.target.value)}><option value="">No folder</option>{folders.map((f) => <option key={f._id} value={f._id}>{f.title}</option>)}</select></label>
+            )}
             <label>Tags<input value={tags} disabled={running} onChange={(event) => setTags(event.target.value)} placeholder="gurbani, ang 1" /></label>
             <label className="bulk-katha-check"><input type="checkbox" checked={publish} disabled={running} onChange={(event) => setPublish(event.target.checked)} /> Publish after upload</label>
             <label className="bulk-katha-check"><input type="checkbox" checked={allowDownload} disabled={running} onChange={(event) => setAllowDownload(event.target.checked)} /> Allow downloads</label>

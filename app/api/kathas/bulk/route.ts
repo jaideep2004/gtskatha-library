@@ -8,6 +8,8 @@ import {
   bulkArchiveKathas,
   bulkHardDeleteKathas,
   bulkSetThumbnail,
+  bulkSetFolder,
+  bulkSetCategory,
   type BulkAudioKathaInput,
 } from '@/services/kathaService';
 import { recordAudit } from '@/services/auditService';
@@ -96,26 +98,44 @@ export async function PUT(req: NextRequest) {
     const limited = enforceRateLimit(req, ADMIN_MUTATION_LIMIT);
     if (limited) return limited;
 
-    const { ids, thumbnail } = await req.json() as { ids?: string[]; thumbnail?: string };
+    const { ids, thumbnail, folderId, folderIdPresent, categoryId, categoryIdPresent } = await req.json() as {
+      ids?: string[]; thumbnail?: string; folderId?: string; folderIdPresent?: boolean;
+      categoryId?: string; categoryIdPresent?: boolean;
+    };
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ success: false, error: 'ids array is required' }, { status: 400 });
     }
-    if (!thumbnail) {
-      return NextResponse.json({ success: false, error: 'thumbnail is required' }, { status: 400 });
-    }
 
-    const result = await bulkSetThumbnail(ids, thumbnail);
+    let result;
+    let message: string;
+    let action: string;
+
+    if (categoryIdPresent !== undefined) {
+      result = await bulkSetCategory(ids, categoryId ?? null);
+      message = `Category set for ${result.modifiedCount} katha(s)`;
+      action = 'katha.bulk_set_category';
+    } else if (folderIdPresent !== undefined) {
+      result = await bulkSetFolder(ids, folderId ?? null);
+      message = `Folder set for ${result.modifiedCount} katha(s)`;
+      action = 'katha.bulk_set_folder';
+    } else if (thumbnail) {
+      result = await bulkSetThumbnail(ids, thumbnail);
+      message = `Artwork set for ${result.modifiedCount} katha(s)`;
+      action = 'katha.bulk_set_thumbnail';
+    } else {
+      return NextResponse.json({ success: false, error: 'categoryId, folderId, or thumbnail is required' }, { status: 400 });
+    }
 
     await recordAudit({
       actorId: auth.session.user.id,
-      action: 'katha.bulk_set_thumbnail',
+      action,
       entityType: 'Katha',
       metadata: { ids, count: result.modifiedCount },
     });
 
     return NextResponse.json({
       success: true,
-      message: `Artwork set for ${result.modifiedCount} katha(s)`,
+      message,
       data: result,
     });
   } catch (error) {

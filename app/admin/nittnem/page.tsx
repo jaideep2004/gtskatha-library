@@ -61,8 +61,9 @@ export default function NittnemAdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', description: '' });
+  const [form, setForm] = useState({ title: '', description: '', thumbnail: '' });
   const [saving, setSaving] = useState(false);
+  const [listThumbUploading, setListThumbUploading] = useState(false);
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [entries, setEntries] = useState<Record<string, NittnemEntry[]>>({});
@@ -108,14 +109,14 @@ export default function NittnemAdminPage() {
   }
 
   function openNew() {
-    setForm({ title: '', description: '' });
+    setForm({ title: '', description: '', thumbnail: '' });
     setEditingSlug(null);
     setError('');
     setShowForm(true);
   }
 
   function openEdit(n: Nittnem) {
-    setForm({ title: n.title, description: n.description ?? '' });
+    setForm({ title: n.title, description: n.description ?? '', thumbnail: n.thumbnail ?? '' });
     setEditingSlug(n.slug);
     setError('');
     setShowForm(true);
@@ -126,7 +127,7 @@ export default function NittnemAdminPage() {
     setSaving(true);
     setError('');
     try {
-      const payload = { title: form.title, description: form.description || undefined };
+      const payload = { title: form.title, description: form.description || undefined, thumbnail: form.thumbnail || undefined };
       const method = editingSlug ? 'PUT' : 'POST';
       const url = editingSlug ? `/api/nittnem/${editingSlug}` : '/api/nittnem';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -271,6 +272,12 @@ export default function NittnemAdminPage() {
               <textarea id="n-desc" className="input" rows={2} placeholder="Optional description"
                 value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <FileUpload folder="thumbnails" label="Artwork" accept="image/*"
+                currentFile={form.thumbnail}
+                onUploaded={(filename) => setForm(f => ({ ...f, thumbnail: filename }))}
+                onUploadingChange={setListThumbUploading} />
+            </div>
             {error && <p style={{ gridColumn: '1/-1', color: 'var(--color-error)', fontSize: 'var(--font-size-sm)' }}>{error}</p>}
             <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 'var(--space-3)' }}>
               <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
@@ -296,8 +303,9 @@ export default function NittnemAdminPage() {
               ) : lists.map((n) => (
                 <Fragment key={n._id}>
                   <tr className="paath-row" onClick={() => toggleExpand(n)} style={{ cursor: 'pointer' }}>
-                    <td style={{ fontWeight: 500 }}>
+                    <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span className={`paath-expand ${expandedId === n._id ? 'expanded' : ''}`}>▸</span>
+                      {n.thumbnail && <img src={`/api/media/thumbnails/${n.thumbnail}`} alt="" className="admin-thumb-sm" />}
                       {n.title}
                     </td>
                     <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{n.slug}</code></td>
@@ -474,6 +482,7 @@ export default function NittnemAdminPage() {
         .admin-table tr:hover td { background: var(--color-bg); }
         .count-pill { min-width: 32px; height: 26px; display: inline-grid; place-items: center; padding: 0 10px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700; }
         .count-total { color: #233044; background: #eef1f5; }
+        .admin-thumb-sm { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--color-bg-secondary); }
         .paath-expand { display: inline-block; margin-right: 8px; transition: transform 200ms ease; font-size: 12px; color: var(--color-text-muted); }
         .paath-expand.expanded { transform: rotate(90deg); }
         .paath-row:hover { background: var(--color-bg); }

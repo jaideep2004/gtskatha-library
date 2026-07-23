@@ -45,6 +45,11 @@ export default async function PaathDetailPage({ params }: PageProps) {
         </nav>
 
         <div className="detail-header">
+          {paath.thumbnail && (
+            <div className="detail-artwork">
+              <img src={getThumbnailUrl(paath.thumbnail)} alt={paath.title} />
+            </div>
+          )}
           <div className="detail-header-info">
             <h1 className="detail-title">{paath.title}</h1>
             {paath.description && <p className="detail-desc">{paath.description}</p>}
@@ -103,7 +108,9 @@ export default async function PaathDetailPage({ params }: PageProps) {
         .breadcrumb a { color: var(--color-text-secondary); text-decoration: none; }
         .breadcrumb a:hover { color: var(--color-primary); }
         .breadcrumb-sep { margin: 0 var(--space-2); }
-        .detail-header { margin-bottom: var(--space-8); }
+        .detail-header { display: flex; gap: var(--space-8); margin-bottom: var(--space-8); align-items: flex-start; }
+        .detail-artwork { width: 180px; flex-shrink: 0; border-radius: var(--radius-lg); overflow: hidden; background: var(--color-bg-secondary); box-shadow: var(--shadow-md); }
+        .detail-artwork img { width: 100%; display: block; }
         .detail-title { font-family: var(--font-heading); font-size: var(--font-size-4xl); font-weight: 700; margin-bottom: var(--space-3); }
         .detail-desc { color: var(--color-text-secondary); line-height: 1.65; max-width: 600px; margin-bottom: var(--space-4); }
         .detail-meta { display: flex; gap: var(--space-4); font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-4); }

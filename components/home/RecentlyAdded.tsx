@@ -241,7 +241,7 @@ export default function RecentlyAdded({ kathas, isLoading }: RecentlyAddedProps)
         }
 
         .ra-thumb {
-          height: 174px;
+          height: 150px;
           position: relative;
           background:
             radial-gradient(circle at 20% 10%, rgba(217,140,41,.3), transparent 42%),

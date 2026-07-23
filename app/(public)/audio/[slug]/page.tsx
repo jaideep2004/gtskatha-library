@@ -281,8 +281,8 @@ export default async function AudioDetailPage({ params }: PageProps) {
 
         .audio-art {
           flex-shrink: 0;
-          width: 292px;
-          height: 365px;
+          width: 250px;
+          height: 250px;
           border-radius: 8px;
           overflow: hidden;
           background: linear-gradient(135deg, #1a1608, #2d2510, #1a1608);
@@ -498,7 +498,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
           .breadcrumb span { color: rgba(255,255,255,0.62); }
           .audio-header { flex-direction: column; }
           .audio-art {
-            width: min(76vw, 320px);
+            width: min(76vw, 150px);
             height: auto;
             aspect-ratio: 4 / 5;
             margin: 0 auto;
@@ -521,8 +521,32 @@ export default async function AudioDetailPage({ params }: PageProps) {
           }
           .sidebar-card-title { color: rgba(255,255,255,0.58); }
           .audio-tag { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+          .audio-detail-main :global(.audio-player-wrap) { padding: 20px 16px; }
+          .audio-meta-row { gap: 10px; font-size: 12px; }
         }
-      `}</style>
+        @media (max-width: 480px) {
+          .page-section { padding-top: 12px; }
+          .breadcrumb { font-size: 12px; margin-bottom: 18px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+          .breadcrumb a, .breadcrumb span { display: inline-block; padding: 2px 0; }
+          .audio-header { gap: 20px; margin-bottom: 24px; }
+          .audio-art { width: min(80vw, 140px); }
+          .audio-title { font-size: 28px; }
+          .audio-author { margin-bottom: 14px; }
+          .audio-description { font-size: 13px; -webkit-line-clamp: 4; }
+          .audio-info-top { gap: 8px; margin-bottom: 12px; }
+          .audio-detail-main :global(.tabs) { gap: 16px; padding: 0 4px; }
+          .audio-detail-main :global(.tab-panels) { padding: 0 12px; min-height: 200px; }
+          .audio-detail-main :global(.audio-player-wrap) { padding: 18px 14px; border-radius: 6px; }
+          .sidebar-card { padding: 14px; }
+          .audio-info :global(.audio-actions .btn) { min-height: 42px; font-size: 13px; padding: 0 16px; }
+        }
+        @media (max-width: 390px) {
+          .audio-title { font-size: 24px; }
+          .audio-art { width: min(86vw, 135px); }
+          .audio-meta-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+          .related-thumb { width: 44px; height: 32px; }
+          .related-title { font-size: 12px; }
+        }`}</style>
     </div>
   );
 }

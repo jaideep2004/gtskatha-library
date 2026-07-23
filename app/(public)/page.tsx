@@ -3,11 +3,12 @@ import { getServerSession } from 'next-auth';
 import HeroSection from '@/components/home/HeroSection';
 import ContinueListening from '@/components/home/ContinueListening';
 import PopularSeries from '@/components/home/PopularSeries';
-import RecentlyAdded from '@/components/home/RecentlyAdded';
+import PaathNittnemSection from '@/components/home/PaathNittnemSection';
 import AudioThemes from '@/components/home/AudioThemes';
-import { getRecentKathas, getFeaturedKathas } from '@/services/kathaService';
+import { getFeaturedKathas } from '@/services/kathaService';
 import { getAllSeries } from '@/services/seriesService';
-import { getCategoriesWithCount } from '@/services/categoryService';
+import { getAllPaaths } from '@/services/paathService';
+import { getAllNittnems } from '@/services/nittnemService';
 import { IKatha, ISeries } from '@/types';
 import connectDB from '@/lib/db';
 import HomepageConfig from '@/models/HomepageConfig';
@@ -23,20 +24,19 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  let recentKathas: IKatha[] = [];
   let heroKatha: IKatha | undefined;
   let series: ISeries[] = [];
   let continueItem: Parameters<typeof ContinueListening>[0]['item'];
   let dailyQuote: string | undefined;
-  let categories: Array<{ _id: string; name: string; slug: string; kathaCount: number; audioCount: number; videoCount: number }> = [];
+  let paathData: Array<{ _id: string; title: string; slug: string; description?: string; entryCount: number }> = [];
+  let nittnemData: Array<{ _id: string; title: string; slug: string; description?: string; entryCount: number }> = [];
 
   try {
     await connectDB();
 
     const session = await getServerSession(authOptions);
 
-    const [recent, featured, allSeries, config, continueRaw, categoriesRaw] = await Promise.all([
-      getRecentKathas(10),
+    const [featured, allSeries, config, continueRaw, paaths, nittnems] = await Promise.all([
       getFeaturedKathas(undefined, 1),
       getAllSeries(true),
       HomepageConfig.findOne()
@@ -48,12 +48,13 @@ export default async function HomePage() {
             .populate('kathaId', 'title slug type thumbnail authorName duration status published')
             .lean()
         : null,
-      getCategoriesWithCount({ limit: 4, sort: 'newest' }),
+      getAllPaaths(),
+      getAllNittnems(),
     ]);
 
-    recentKathas = recent as unknown as IKatha[];
     series = allSeries as unknown as ISeries[];
-    categories = categoriesRaw as unknown as Array<{ _id: string; name: string; slug: string; kathaCount: number; audioCount: number; videoCount: number }>;
+    paathData = paaths as unknown as typeof paathData;
+    nittnemData = nittnems as unknown as typeof nittnemData;
 
     const featuredKatha = (featured as unknown as IKatha[])[0];
 
@@ -98,8 +99,14 @@ export default async function HomePage() {
       <HeroSection heroKatha={heroKatha ? serializeForClient(heroKatha) : undefined} />
       <ContinueListening item={continueItem ? serializeForClient(continueItem) : undefined} dailyQuote={dailyQuote} />
       <PopularSeries series={series.length ? serializeForClient(series) : undefined} />
-      <RecentlyAdded kathas={recentKathas.length ? serializeForClient(recentKathas) : undefined} />
-      <AudioThemes categories={categories.length ? serializeForClient(categories) : undefined} />
+      <PaathNittnemSection
+        paaths={paathData.length ? serializeForClient(paathData) : undefined}
+        nittnems={nittnemData.length ? serializeForClient(nittnemData) : undefined}
+      />
+      <AudioThemes
+        paathData={paathData.length ? serializeForClient(paathData) : undefined}
+        nittnemData={nittnemData.length ? serializeForClient(nittnemData) : undefined}
+      />
     </div>
   );
 }

@@ -604,8 +604,8 @@ export default function KathasAdminPage() {
                 />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Options</label>
+            <div className="form-card">
+              <div className="form-card-label">Options</div>
               <div className="form-checkboxes">
                 <label className="form-checkbox">
                   <input
@@ -1390,7 +1390,7 @@ export default function KathasAdminPage() {
           transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .admin-form-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);animation:adminFormFadeIn 180ms ease}
-        .admin-form-modal{background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:min(680px,calc(100vw - var(--space-8)));max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:adminFormPop 220ms cubic-bezier(.34,1.56,.64,1)}
+        .admin-form-modal{background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6) var(--space-8);width:min(800px,calc(100vw - var(--space-8)));max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:adminFormPop 220ms cubic-bezier(.34,1.56,.64,1)}
         .admin-form-modal .form-group input:not([type=checkbox]),
         .admin-form-modal .form-group select,
         .admin-form-modal .form-group textarea { width: 100%; box-sizing: border-box; }
@@ -1543,6 +1543,8 @@ export default function KathasAdminPage() {
         .chapter-time { font-variant-numeric: tabular-nums; }
         .chapter-remove { width: 36px; height: 36px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-error); cursor: pointer; font-size: 20px; }
         .chapter-remove:hover { border-color: var(--color-error); background: rgba(239,68,68,0.06); }
+        .form-card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); }
+        .form-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--color-text-muted); margin-bottom: var(--space-3); }
         .chapter-empty { padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: var(--font-size-sm); }
         .bulk-bar {
           display: flex; align-items: center;

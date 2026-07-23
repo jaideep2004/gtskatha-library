@@ -14,6 +14,8 @@ import { KathaSearchParams } from '@/types';
 import { DomainError } from '@/lib/domainError';
 import { deleteFile } from '@/services/uploadService';
 import type { MediaFolder } from '@/lib/media';
+import PaathEntry from '@/models/PaathEntry';
+import NittnemEntry from '@/models/NittnemEntry';
 import { isSearchQueryReady } from '@/lib/search';
 import { generateSlug } from '@/lib/utils';
 
@@ -652,6 +654,59 @@ async function resolveRelationId(
     ? await Category.findOne({ slug: value, archived: { $ne: true } }).select('_id').lean()
     : await Series.findOne({ slug: value, archived: { $ne: true } }).select('_id').lean();
   return relation?._id ? String(relation._id) : null;
+}
+
+export async function getKathaParentAssociations(
+  kathaIds: string[]
+): Promise<Map<string, { type: 'paath' | 'nittnem'; parentId: string; title: string; slug: string }>> {
+  if (kathaIds.length === 0) return new Map();
+  await connectDB();
+
+  const validIds = kathaIds
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (validIds.length === 0) return new Map();
+
+  const result = new Map<
+    string,
+    { type: 'paath' | 'nittnem'; parentId: string; title: string; slug: string }
+  >();
+
+  const [paathEntries, nittnemEntries] = await Promise.all([
+    PaathEntry
+      .find({ kathaId: { $in: validIds } })
+      .populate('paathId', 'title slug')
+      .lean(),
+    NittnemEntry
+      .find({ kathaId: { $in: validIds } })
+      .populate('nittnemId', 'title slug')
+      .lean(),
+  ]);
+
+  for (const entry of paathEntries) {
+    const paath = entry.paathId as unknown as { _id: string; title: string; slug: string } | null;
+    if (!paath) continue;
+    result.set(entry.kathaId.toString(), {
+      type: 'paath',
+      parentId: paath._id.toString(),
+      title: paath.title,
+      slug: paath.slug,
+    });
+  }
+
+  for (const entry of nittnemEntries) {
+    if (result.has(entry.kathaId.toString())) continue;
+    const nittnem = entry.nittnemId as unknown as { _id: string; title: string; slug: string } | null;
+    if (!nittnem) continue;
+    result.set(entry.kathaId.toString(), {
+      type: 'nittnem',
+      parentId: nittnem._id.toString(),
+      title: nittnem.title,
+      slug: nittnem.slug,
+    });
+  }
+
+  return result;
 }
 
 function emptyResult(page: number, limit: number) {

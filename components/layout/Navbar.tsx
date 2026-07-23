@@ -12,11 +12,10 @@ import UserMenu from '@/components/layout/UserMenu';
 
 const navLinks = [
   { href: '/', label: 'Home', icon: 'home' },
-  { href: '/audio', label: 'Audio' },
-  { href: '/video', label: 'Video' },
+  { href: '/audio', label: 'Kathas' },
+  { href: '/nittnem', label: 'Nittnem' },
+  { href: '/paath', label: 'Paath' },
   { href: '/series', label: 'Series' },
-  { href: '/topics', label: 'Topics' },
-  { href: '/search', label: 'Library' },
 ];
 
 function NavIcon({ type }: { type?: string }) {

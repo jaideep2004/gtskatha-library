@@ -3,17 +3,16 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserFavorites, addFavorite, removeFavorite } from '@/services/favoriteService';
 import mongoose from 'mongoose';
-import connectDB from '@/lib/db';
-import Katha from '@/models/Katha';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-
-    const favorites = await getUserFavorites(session.user.id);
+    const { searchParams } = new URL(req.url);
+    const itemType = searchParams.get('itemType') || undefined;
+    const favorites = await getUserFavorites(session.user.id, itemType);
     return NextResponse.json({ success: true, data: favorites });
   } catch (error) {
     console.error('GET /api/favorites', error);
@@ -28,22 +27,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { kathaId } = await req.json();
-    if (typeof kathaId !== 'string' || !mongoose.Types.ObjectId.isValid(kathaId)) {
-      return NextResponse.json({ success: false, error: 'Valid kathaId is required' }, { status: 400 });
+    const body = await req.json();
+    const targetId = body.kathaId || body.targetId;
+    const itemType = body.itemType || 'katha';
+
+    if (typeof targetId !== 'string' || !mongoose.Types.ObjectId.isValid(targetId)) {
+      return NextResponse.json({ success: false, error: 'Valid kathaId/targetId is required' }, { status: 400 });
     }
 
-    await connectDB();
-    if (!await Katha.exists({
-      _id: kathaId,
-      status: { $ne: 'archived' },
-      $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
-    })) {
-      return NextResponse.json({ success: false, error: 'Katha not found' }, { status: 404 });
+    const types = ['katha', 'series', 'paath', 'nittnem'];
+    if (!types.includes(itemType)) {
+      return NextResponse.json({ success: false, error: 'Invalid itemType' }, { status: 400 });
     }
-    const fav = await addFavorite(session.user.id, kathaId);
+
+    const fav = await addFavorite(session.user.id, targetId, itemType);
     if (!fav) {
-      return NextResponse.json({ success: false, error: 'Katha not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Target not found' }, { status: 404 });
     }
     return NextResponse.json({ success: true, data: fav }, { status: 201 });
   } catch (error) {
@@ -59,11 +58,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { kathaId } = await req.json();
-    if (typeof kathaId !== 'string' || !mongoose.Types.ObjectId.isValid(kathaId)) {
-      return NextResponse.json({ success: false, error: 'Valid kathaId is required' }, { status: 400 });
+    const body = await req.json();
+    const targetId = body.kathaId || body.targetId;
+    const itemType = body.itemType || 'katha';
+
+    if (typeof targetId !== 'string' || !mongoose.Types.ObjectId.isValid(targetId)) {
+      return NextResponse.json({ success: false, error: 'Valid kathaId/targetId is required' }, { status: 400 });
     }
-    await removeFavorite(session.user.id, kathaId);
+
+    await removeFavorite(session.user.id, targetId, itemType);
     return NextResponse.json({ success: true, message: 'Removed from favorites' });
   } catch (error) {
     console.error('DELETE /api/favorites', error);

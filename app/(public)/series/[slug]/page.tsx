@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PlaySeriesButton from '@/components/series/PlaySeriesButton';
 import SeriesFolderGrid from '@/components/series/SeriesFolderGrid';
+import FavoriteButton from '@/components/ui/FavoriteButton';
 import { getSeriesBySlug } from '@/services/seriesService';
 import { getKathas } from '@/services/kathaService';
 import { getFoldersBySeries } from '@/services/folderService';
@@ -117,9 +118,12 @@ export default async function SeriesDetailPage({ params }: PageProps) {
               </span>
             </div>
 
-            {allKathas.length > 0 && (
-              <PlaySeriesButton kathas={allKathas} />
-            )}
+            <div className="series-detail-actions">
+              {allKathas.length > 0 && (
+                <PlaySeriesButton kathas={allKathas} />
+              )}
+              <FavoriteButton targetId={(series as ISeries & { _id: string })._id} itemType="series" variant="pill" size="md" />
+            </div>
           </div>
         </div>
 
@@ -216,6 +220,13 @@ export default async function SeriesDetailPage({ params }: PageProps) {
           display: flex;
           align-items: center;
           gap: var(--space-2);
+        }
+
+        .series-detail-actions {
+          display: flex;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+          align-items: center;
         }
 
         .series-episodes { margin-top: var(--space-4); }

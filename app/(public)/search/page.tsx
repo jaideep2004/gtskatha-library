@@ -37,8 +37,8 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const activeSeries = seriesSlug ? seriesList.find((s) => s.slug === seriesSlug) : null;
 
   let folders: IFolder[] = [];
-  let folderMap = new Map<string, IKatha[]>();
-  let uncategorized: IKatha[] = [];
+  const folderMap = new Map<string, IKatha[]>();
+  const uncategorized: IKatha[] = [];
   let kathas: IKatha[] = [];
   let total = 0;
   let totalPages = 1;

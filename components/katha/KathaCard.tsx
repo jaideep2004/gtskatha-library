@@ -63,8 +63,8 @@ export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
             transform: translateX(4px);
           }
           .kc-list-thumb {
-            width: 72px;
-            height: 72px;
+            width: 60px;
+            height: 60px;
             border-radius: var(--radius-md);
             overflow: hidden;
             flex-shrink: 0;
@@ -117,7 +117,7 @@ export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
 
   return (
     <Link href={`/${katha.type}/${katha.slug}`} className="kc-grid-card">
-      <div className="kc-grid-thumb thumbnail-wrap" style={{ height: 180 }}>
+      <div className="kc-grid-thumb thumbnail-wrap" style={{ height: 156 }}>
         {katha.thumbnail ? (
           <img src={getMediaUrl('thumbnails', katha.thumbnail)} alt={katha.title} loading="lazy" />
         ) : (

@@ -1,92 +1,73 @@
 import Link from 'next/link';
 
-const PALETTE = [
-  { color: '#D98C29', bg: '#FFF4E6' },
-  { color: '#7C5CBF', bg: '#F3EEFF' },
-  { color: '#3D9B5F', bg: '#EEF8F0' },
-  { color: '#4A7FD4', bg: '#EEF4FF' },
-];
-
 interface AudioThemesProps {
-  categories?: Array<{
-    _id: string;
-    name: string;
-    slug: string;
-    kathaCount?: number;
-    audioCount?: number;
-    videoCount?: number;
-    thumbnail?: string;
-  }>;
+  paathData?: Array<{ _id: string; title: string; slug: string; description?: string; entryCount: number }>;
+  nittnemData?: Array<{ _id: string; title: string; slug: string; description?: string; entryCount: number }>;
 }
 
-export default function AudioThemes({ categories }: AudioThemesProps) {
-  const items = categories ?? [];
+export default function AudioThemes({ paathData, nittnemData }: AudioThemesProps) {
+  const paaths = paathData ?? [];
+  const nittnems = nittnemData ?? [];
+  const hasAny = paaths.length > 0 || nittnems.length > 0;
+
+  if (!hasAny) return null;
+
   return (
     <section className="at-section">
       <div className="container">
         <div className="at-layout">
-          {/* Left: theme circles */}
           <div className="at-left">
             <div className="section-header">
-              <h2 className="section-title">ਵਿਸ਼ਿਆਂ ਅਨੁਸਾਰ ਆਡੀਓ</h2>
-              <Link href="/search" className="section-link">
-                ਸਾਰੇ ਵਿਸ਼ੇ
+              <h2 className="section-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                ਪਾਠ ਅਤੇ ਨਿਤਨੇਮ
+              </h2>
+              <Link href="/paath" className="section-link">
+                ਸਭ ਵੇਖੋ
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
               </Link>
             </div>
 
-            <div className="at-grid">
-              {items.map((category, i) => {
-                const { color, bg } = PALETTE[i % PALETTE.length];
-                return (
-                  <Link
-                    key={category._id}
-                    href={`/search?category=${category.slug}`}
-                    className="at-card"
-                    style={{ '--theme-color': color, '--theme-bg': bg } as React.CSSProperties}
-                  >
-                    <span className="at-card-index" aria-hidden>
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <div
-                      className="at-icon-wrap"
-                      style={{ background: bg, borderColor: `${color}30` }}
-                    >
-                      <span className="at-icon-letter" style={{ color }}>
-                        {category.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="at-name">{category.name}</div>
-                    <div className="at-count">
-                      <span>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                        </svg>
-                        {category.audioCount ?? 0} audio
-                      </span>
-                      <span>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-                        </svg>
-                        {category.videoCount ?? 0} video
-                      </span>
-                    </div>
-                    <span className="at-card-arrow" aria-hidden>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M5 12h14M13 6l6 6-6 6"/>
-                      </svg>
-                    </span>
-                  </Link>
-                );
-              })}
-              {!items.length && (
-                <div className="at-empty">
-                  <strong>ਵਿਸ਼ੇ ਤਿਆਰ ਕੀਤੇ ਜਾ ਰਹੇ ਹਨ।</strong>
-                  <span>ਨਵੇਂ ਵਰਗ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</span>
-                </div>
-              )}
+            <div className="at-pn-row">
+              {paaths.slice(0, 2).map((p, i) => (
+                <Link key={p._id} href={`/paath/${p.slug}`} className="at-pn-card at-pn-card--paath" style={{ '--gi': i } as React.CSSProperties}>
+                  <div className="at-pn-glow" aria-hidden />
+                  <span className="at-pn-badge">ਪਾਠ</span>
+                  <div className="at-pn-icon-wrap">
+                    <span className="at-pn-icon">☬</span>
+                  </div>
+                  <div className="at-pn-body">
+                    <h4 className="at-pn-title">{p.title}</h4>
+                    {p.description && <p className="at-pn-desc">{p.description}</p>}
+                  </div>
+                  <div className="at-pn-footer">
+                    <span className="at-pn-count">{p.entryCount} entries</span>
+                    <span className="at-pn-arrow">→</span>
+                  </div>
+                </Link>
+              ))}
+              {nittnems.slice(0, 2).map((n, i) => (
+                <Link key={n._id} href={`/nittnem/${n.slug}`} className="at-pn-card at-pn-card--nittnem" style={{ '--gi': i } as React.CSSProperties}>
+                  <div className="at-pn-glow" aria-hidden />
+                  <span className="at-pn-badge at-pn-badge--teal">ਨਿਤਨੇਮ</span>
+                  <div className="at-pn-icon-wrap at-pn-icon-wrap--teal">
+                    <span className="at-pn-icon">☬</span>
+                  </div>
+                  <div className="at-pn-body">
+                    <h4 className="at-pn-title">{n.title}</h4>
+                    {n.description && <p className="at-pn-desc">{n.description}</p>}
+                  </div>
+                  <div className="at-pn-footer">
+                    <span className="at-pn-count">{n.entryCount} entries</span>
+                    <span className="at-pn-arrow">→</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -118,259 +99,105 @@ export default function AudioThemes({ categories }: AudioThemesProps) {
       </div>
 
       <style>{`
-        .at-section {
-          padding: 38px 0 58px;
+        .at-section { padding: 38px 0 58px; }
+        .at-layout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr); gap: clamp(36px, 5vw, 72px); align-items: start; }
+        .at-left .section-header { margin-bottom: 20px; }
+        .section-title { display: flex; align-items: center; gap: 10px; color: #162033; }
+        .at-pn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .at-pn-card {
+          position: relative; overflow: hidden;
+          display: flex; flex-direction: column; gap: 8px;
+          padding: 18px 18px 14px;
+          border-radius: 20px; text-decoration: none; color: inherit;
+          transition: transform 280ms ease, box-shadow 280ms ease;
+          animation: pnCardIn .4s ease both;
+          animation-delay: calc(var(--gi, 0) * .08s);
         }
-
-        .at-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr);
-          gap: clamp(36px, 5vw, 72px);
-          align-items: start;
+        @keyframes pnCardIn { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .at-pn-card--paath {
+          background: linear-gradient(145deg, #2b200b, #1e1709);
+          border: 1px solid rgba(217,140,41,.28);
+          box-shadow: 0 12px 28px rgba(217,140,41,.12);
         }
-
-        .at-left .section-header {
-          margin-bottom: 20px;
+        .at-pn-card--paath:hover {
+          transform: translateY(-6px);
+          border-color: rgba(217,140,41,.5);
+          box-shadow: 0 22px 44px rgba(217,140,41,.22);
         }
-
-        .at-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px;
+        .at-pn-card--nittnem {
+          background: linear-gradient(145deg, #0b2820, #081b15);
+          border: 1px solid rgba(22,129,90,.28);
+          box-shadow: 0 12px 28px rgba(22,129,90,.12);
         }
-        .at-empty { grid-column: 1 / -1; min-height: 150px; display: grid; place-content: center; text-align: center; border: 1px dashed var(--color-border); border-radius: 8px; background: #fff; }
-        .at-empty strong { font-family: var(--font-heading); font-size: 20px; }
-        .at-empty span { margin-top: 6px; font-size: 12px; color: var(--color-text-muted); }
-
-        .at-card {
-          --theme-color: #d98c29;
-          --theme-bg: #fff4e6;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          min-height: 118px;
-          padding: 18px 42px 18px 16px;
-          border-radius: 18px;
-          border: 1px solid rgba(34,48,69,.11);
-          text-decoration: none;
-          text-align: left;
-          background:
-            radial-gradient(circle at 0 0, var(--theme-bg), transparent 48%),
-            linear-gradient(135deg, rgba(255,255,255,.98), rgba(251,249,245,.96));
-          box-shadow: 0 12px 32px rgba(23,35,55,.065);
-          position: relative;
+        .at-pn-card--nittnem:hover {
+          transform: translateY(-6px);
+          border-color: rgba(22,129,90,.5);
+          box-shadow: 0 22px 44px rgba(22,129,90,.22);
+        }
+        .at-pn-glow {
+          position: absolute; inset: 0; pointer-events: none;
+          background: radial-gradient(circle at 28% 0%, rgba(255,200,100,.08), transparent 60%);
+          transition: opacity .3s ease;
+        }
+        .at-pn-card:hover .at-pn-glow { opacity: .7; }
+        .at-pn-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          width: fit-content; padding: 4px 11px;
+          border-radius: 999px; background: rgba(217,140,41,.18);
+          color: #f1ae45; font-size: 9px; font-weight: 800;
+          letter-spacing: 1.2px; text-transform: uppercase;
+        }
+        .at-pn-badge--teal { background: rgba(22,129,90,.18); color: #3fc99a; }
+        .at-pn-icon-wrap {
+          width: 42px; height: 42px;
+          display: grid; place-items: center;
+          border-radius: 12px;
+          background: rgba(217,140,41,.14); color: #f1ae45;
+          font-size: 18px;
+          transition: transform .25s ease, box-shadow .25s ease;
+        }
+        .at-pn-icon-wrap--teal { background: rgba(22,129,90,.14); color: #3fc99a; }
+        .at-pn-card:hover .at-pn-icon-wrap { transform: scale(1.08) rotate(-6deg); }
+        .at-pn-body { min-width: 0; }
+        .at-pn-title {
+          font-family: var(--font-heading);
+          font-size: 15px; font-weight: 700; color: #fff;
+          margin: 0 0 4px;
+          display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
           overflow: hidden;
-          transition:
-            transform 240ms ease,
-            box-shadow 240ms ease,
-            border-color 240ms ease;
         }
-
-        .at-card::before {
-          content: "";
-          position: absolute;
-          inset: 0 auto 0 0;
-          width: 3px;
-          background: var(--theme-color);
-          transform: scaleY(.34);
-          border-radius: 0 4px 4px 0;
-          transition: transform 240ms ease;
-        }
-
-        .at-card:hover {
-          transform: translateY(-5px) translateX(2px);
-          box-shadow: 0 20px 42px rgba(20,32,51,.13);
-          border-color: color-mix(in srgb, var(--theme-color) 42%, transparent);
-        }
-
-        .at-card:hover::before,
-        .at-card:focus-visible::before {
-          transform: scaleY(1);
-        }
-
-        .at-card:focus-visible {
-          outline: 3px solid color-mix(in srgb, var(--theme-color) 24%, transparent);
-          outline-offset: 3px;
-        }
-
-        .at-icon-wrap {
-          width: 58px;
-          height: 58px;
-          flex: 0 0 58px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid;
-          box-shadow:
-            inset 0 0 0 5px rgba(255,255,255,.58),
-            0 8px 18px rgba(20,32,51,.08);
-          transition: transform 240ms ease, box-shadow 240ms ease;
-        }
-
-        .at-card:hover .at-icon-wrap {
-          transform: scale(1.07) rotate(-4deg);
-          box-shadow:
-            inset 0 0 0 5px rgba(255,255,255,.66),
-            0 12px 24px rgba(20,32,51,.13);
-        }
-
-        .at-icon-letter {
-          font-family: var(--font-heading);
-          font-size: 24px;
-          font-weight: 700;
-        }
-
-        .at-name {
-          min-width: 0;
-          flex: 1;
-          font-family: var(--font-heading);
-          font-size: 16px;
-          font-weight: 700;
-          color: var(--color-text-primary);
-          line-height: 1.2;
-        }
-
-        .at-count {
-          position: absolute;
-          left: 88px;
-          bottom: 18px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 5px 10px;
-          font-size: 9px;
-          color: var(--color-text-muted);
-        }
-
-        .at-count span {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          white-space: nowrap;
-        }
-
-        .at-card-index {
-          position: absolute;
-          top: 10px;
-          right: 12px;
-          color: rgba(20,32,51,.16);
-          font-family: var(--font-heading);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .08em;
-        }
-
-        .at-card-arrow {
-          position: absolute;
-          right: 15px;
-          bottom: 17px;
-          display: grid;
-          place-items: center;
-          color: var(--theme-color);
-          transform: translateX(-3px);
-          opacity: .7;
-          transition: transform 220ms ease, opacity 220ms ease;
-        }
-
-        .at-card:hover .at-card-arrow {
-          transform: translateX(2px);
-          opacity: 1;
-        }
-
-        .at-cta {
-          position: relative;
-          border-radius: 22px;
+        .at-pn-desc {
+          margin: 0; font-size: 11px; line-height: 1.5;
+          color: rgba(255,255,255,.55);
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
           overflow: hidden;
-          min-height: 280px;
-          background: #f5f0e9;
-          border: 1px solid var(--color-border);
-          box-shadow: 0 18px 46px rgba(20,32,51,.1);
         }
-
-        .at-cta-bg {
-          position: absolute;
-          inset: 0;
-          background-size: cover;
-          background-position: 61% center;
-          opacity: 1;
+        .at-pn-footer {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-top: 2px;
         }
+        .at-pn-count { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.4); }
+        .at-pn-arrow { font-size: 14px; color: rgba(255,255,255,.3); transition: transform .2s ease, color .2s ease; }
+        .at-pn-card:hover .at-pn-arrow { transform: translateX(4px); }
+        .at-pn-card--paath:hover .at-pn-arrow { color: #f1ae45; }
+        .at-pn-card--nittnem:hover .at-pn-arrow { color: #3fc99a; }
 
-        .at-cta-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, rgba(255,253,249,.98) 0%, rgba(255,253,249,.93) 39%, rgba(255,253,249,.2) 68%, transparent 100%);
-        }
+        .at-cta { position: relative; border-radius: 22px; overflow: hidden; min-height: 280px; background: #f5f0e9; border: 1px solid var(--color-border); box-shadow: 0 18px 46px rgba(20,32,51,.1); }
+        .at-cta-bg { position: absolute; inset: 0; background-size: cover; background-position: 61% center; opacity: 1; }
+        .at-cta-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,253,249,.98) 0%, rgba(255,253,249,.93) 39%, rgba(255,253,249,.2) 68%, transparent 100%); }
+        .at-cta-content { position: relative; z-index: 1; padding: 28px 24px; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 280px; max-width: 55%; }
+        .at-cta-title { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--color-text-primary); line-height: 1.25; margin-bottom: 10px; }
+        .at-cta-sub { font-size: 13px; color: var(--color-text-secondary); line-height: 1.55; margin-bottom: 20px; }
+        .at-cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 9999px; background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 600; text-decoration: none; align-self: flex-start; transition: background 150ms ease; }
+        .at-cta-btn:hover { background: var(--color-primary-dark); }
 
-        .at-cta-content {
-          position: relative;
-          z-index: 1;
-          padding: 28px 24px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          height: 100%;
-          min-height: 280px;
-          max-width: 55%;
-        }
-
-        .at-cta-title {
-          font-family: var(--font-heading);
-          font-size: 22px;
-          font-weight: 700;
-          color: var(--color-text-primary);
-          line-height: 1.25;
-          margin-bottom: 10px;
-        }
-
-        .at-cta-sub {
-          font-size: 13px;
-          color: var(--color-text-secondary);
-          line-height: 1.55;
-          margin-bottom: 20px;
-        }
-
-        .at-cta-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 22px;
-          border-radius: 9999px;
-          background: var(--color-primary);
-          color: #fff;
-          font-size: 13px;
-          font-weight: 600;
-          text-decoration: none;
-          align-self: flex-start;
-          transition: background 150ms ease;
-        }
-
-        .at-cta-btn:hover {
-          background: var(--color-primary-dark);
-        }
-
-        @media (max-width: 1024px) {
-          .at-layout { grid-template-columns: 1fr; }
-          .at-cta { min-height: 220px; }
-          .at-cta-content { min-height: 220px; }
-          .at-cta-content { max-width: 62%; }
-        }
-
+        @media (max-width: 1024px) { .at-layout { grid-template-columns: 1fr; } .at-cta { min-height: 220px; } .at-cta-content { min-height: 220px; max-width: 62%; } }
         @media (max-width: 640px) {
-          .at-section { padding-top: 24px; }
-          .at-grid { grid-template-columns: 1fr; }
-          .at-card { min-height: 108px; }
+          .at-pn-row { grid-template-columns: 1fr; }
           .at-cta-bg { background-position: 68% center; }
           .at-cta-content { max-width: 72%; }
         }
-
-        @media (prefers-reduced-motion: reduce) {
-          .at-card,
-          .at-card::before,
-          .at-icon-wrap,
-          .at-card-arrow {
-            transition: none;
-          }
-        }
+        @media (prefers-reduced-motion: reduce) { .at-pn-card, .at-pn-arrow, .at-pn-icon-wrap { transition: none; } }
       `}</style>
     </section>
   );

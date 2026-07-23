@@ -177,6 +177,14 @@ export interface ITimelineComment {
   createdAt: string;
 }
 
+export interface IKathaParentAssociation {
+  kathaId: string;
+  type: 'paath' | 'nittnem';
+  parentId: string;
+  title: string;
+  slug: string;
+}
+
 export interface IInteractionSnapshot {
   comments: ITimelineComment[];
   likeCount: number;

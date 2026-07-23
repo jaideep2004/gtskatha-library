@@ -33,12 +33,12 @@ export default function AdminThumbnail({ folder, value, alt }: AdminThumbnailPro
 }
 
 const thumbnailStyle: CSSProperties = {
-  width: 72,
-  height: 48,
+  width: 60,
+  height: 40,
   display: 'grid',
   placeItems: 'center',
   overflow: 'hidden',
-  borderRadius: 8,
+  borderRadius: 6,
   border: '1px solid rgba(36, 43, 55, 0.1)',
   background: 'linear-gradient(135deg, rgba(217, 140, 27, 0.12), rgba(19, 34, 53, 0.04)), #f7f4ee',
   color: '#d98c1b',

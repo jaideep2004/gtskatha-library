@@ -153,7 +153,7 @@ export default function PopularSeries({ series, isLoading }: PopularSeriesProps)
         }
 
         .ps-thumb {
-          height: 160px;
+          height: 136px;
           position: relative;
           background: var(--color-bg-secondary);
           overflow: hidden;

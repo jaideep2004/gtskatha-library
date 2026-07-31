@@ -151,6 +151,79 @@ export async function getKathas(params: KathaSearchParams = {}) {
   };
 }
 
+async function resolveKathaParent(series?: string, folder?: string): Promise<mongoose.Types.ObjectId | null> {
+  if (series) {
+    const seriesId = await resolveRelationId(Series, series);
+    if (!seriesId) return null;
+    return new mongoose.Types.ObjectId(seriesId);
+  }
+  if (folder) {
+    if (!mongoose.Types.ObjectId.isValid(folder)) return null;
+    return new mongoose.Types.ObjectId(folder);
+  }
+  return null;
+}
+
+const SERIES_LIST_SELECT = '-chapters -keyTakeaways -references -description';
+
+/**
+ * Fetch every katha of a series (or folder) in manual order without the
+ * public list cap. Used to build folder groupings and full playlists on
+ * series/folder detail pages. The caller is a server page, never a
+ * user-controlled limit.
+ */
+export async function getKathasBySeries(
+  series: string,
+  options: { q?: string; type?: 'audio' | 'video'; includeUnpublished?: boolean } = {}
+) {
+  await connectDB();
+  const seriesId = await resolveKathaParent(series);
+  if (!seriesId) return { data: [], total: 0 };
+  return fetchGroupedKathas({ parentField: 'seriesId', parentId: seriesId, options });
+}
+
+export async function getKathasByFolder(
+  folder: string,
+  options: { includeUnpublished?: boolean } = {}
+) {
+  await connectDB();
+  const folderId = await resolveKathaParent(undefined, folder);
+  if (!folderId) return { data: [], total: 0 };
+  return fetchGroupedKathas({ parentField: 'folderId', parentId: folderId, options });
+}
+
+async function fetchGroupedKathas({
+  parentField,
+  parentId,
+  options,
+}: {
+  parentField: 'seriesId' | 'folderId';
+  parentId: mongoose.Types.ObjectId;
+  options: { q?: string; type?: 'audio' | 'video'; includeUnpublished?: boolean };
+}) {
+  const query: Record<string, unknown> = {
+    [parentField]: parentId,
+    ...visibleKathaQuery(Boolean(options.includeUnpublished)),
+  };
+  if (options.q?.trim() && !isSearchQueryReady(options.q)) {
+    return { data: [], total: 0 };
+  }
+  if (options.q?.trim()) {
+    const searchClauses = buildKathaSearchClauses(options.q);
+    const visibilityClauses = Array.isArray(query.$and) ? query.$and : [];
+    query.$and = [...visibilityClauses, ...searchClauses];
+  }
+  if (options.type) query.type = options.type;
+
+  const data = await Katha.find(query)
+    .sort(sortMapManual)
+    .select(SERIES_LIST_SELECT)
+    .lean();
+  return { data, total: data.length };
+}
+
+const sortMapManual: [string, 1 | -1][] = [['sortOrder', 1], ['createdAt', -1]];
+
 export async function getKathaBySlug(slug: string) {
   await connectDB();
   return Katha.findOne({

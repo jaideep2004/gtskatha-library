@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { usePlayerContext } from '@/context/PlayerContext';
 import { IKatha } from '@/types';
 
@@ -9,15 +8,12 @@ interface Props {
 }
 
 export default function PlaySeriesButton({ kathas }: Props) {
-  const router = useRouter();
   const { playFromPlaylist } = usePlayerContext();
 
   if (kathas.length === 0) return null;
 
   const handlePlay = () => {
-    const first = kathas[0];
     playFromPlaylist(kathas, 0);
-    router.push(`/${first.type}/${first.slug}`);
   };
 
   return (

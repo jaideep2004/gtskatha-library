@@ -5,7 +5,7 @@ import PlaySeriesButton from '@/components/series/PlaySeriesButton';
 import SeriesFolderGrid from '@/components/series/SeriesFolderGrid';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { getSeriesBySlug } from '@/services/seriesService';
-import { getKathas } from '@/services/kathaService';
+import { getKathasBySeries } from '@/services/kathaService';
 import { getFoldersBySeries } from '@/services/folderService';
 import { ISeries, IKatha, IFolder } from '@/types';
 import { getThumbnailUrl } from '@/lib/utils';
@@ -47,7 +47,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
     const seriesId = (series as ISeries & { _id: string })._id;
 
     const [kathaResult, rawFolders] = await Promise.all([
-      getKathas({ series: seriesId, sort: 'manual', limit: 5000, includeUnpublished: true }),
+      getKathasBySeries(seriesId),
       getFoldersBySeries(seriesId),
     ]);
     allKathas = serializeForClient(kathaResult.data) as unknown as IKatha[];

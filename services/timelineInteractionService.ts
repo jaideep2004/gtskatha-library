@@ -177,3 +177,51 @@ export async function setKathaLike(kathaId: string, userId: string, liked: boole
   const likeCount = await KathaLike.countDocuments({ kathaId });
   return { likedByViewer: liked, likeCount };
 }
+
+const SUMMARY_MAX_IDS = 50;
+
+export async function getInteractionSummaries(
+  kathaIds: string[],
+  userId?: string
+): Promise<Record<string, { likeCount: number; commentCount: number; likedByViewer: boolean }>> {
+  await connectDB();
+  const ids = [...new Set(kathaIds)]
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .slice(0, SUMMARY_MAX_IDS)
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (ids.length === 0) return {};
+
+  const [likeCounts, commentCounts, viewerLikes] = await Promise.all([
+    KathaLike.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+      { $match: { kathaId: { $in: ids } } },
+      { $group: { _id: '$kathaId', count: { $sum: 1 } } },
+    ]),
+    TimelineComment.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+      { $match: { kathaId: { $in: ids }, status: 'active' } },
+      { $group: { _id: '$kathaId', count: { $sum: 1 } } },
+    ]),
+    userId
+      ? KathaLike.find({ kathaId: { $in: ids }, userId })
+          .select('kathaId')
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  const likeMap = new Map(likeCounts.map((row) => [String(row._id), row.count]));
+  const commentMap = new Map(commentCounts.map((row) => [String(row._id), row.count]));
+  const viewerLiked = new Set(viewerLikes.map((like) => String(like.kathaId)));
+
+  return Object.fromEntries(
+    ids.map((id) => {
+      const key = String(id);
+      return [
+        key,
+        {
+          likeCount: likeMap.get(key) ?? 0,
+          commentCount: commentMap.get(key) ?? 0,
+          likedByViewer: viewerLiked.has(key),
+        },
+      ];
+    })
+  );
+}

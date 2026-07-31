@@ -19,6 +19,8 @@ interface AudioDraft {
   thumbnailFile?: File;
   audioUrl?: string;
   thumbnail?: string;
+  folderId?: string;
+  sourceFolder?: string;
   progress: number;
   status: DraftStatus;
   error?: string;
@@ -32,7 +34,7 @@ interface BulkAudioKathaUploadProps {
 
 const MAX_BATCH_SIZE = 20;
 const CONCURRENCY = 5;
-const directoryInputProps = { webkitdirectory: '' } as unknown as InputHTMLAttributes<HTMLInputElement>;
+const directoryInputProps = { webkitdirectory: '', multiple: '' } as unknown as InputHTMLAttributes<HTMLInputElement>;
 
 function fileStem(fileName: string) {
   return fileName
@@ -53,6 +55,12 @@ function titleFromFilename(fileName: string) {
 
 function fileKey(file: File) {
   return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+function sourceFolderOf(file: File): string {
+  const relativePath = file.webkitRelativePath || '';
+  const parts = relativePath.split('/');
+  return parts.length > 1 ? parts[0] : '';
 }
 
 function isAudioFile(file: File) {
@@ -80,8 +88,10 @@ export default function BulkAudioKathaUpload({
   const [authorName, setAuthorName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [seriesId, setSeriesId] = useState('');
-  const [folderId, setFolderId] = useState('');
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
+  const [folderSearch, setFolderSearch] = useState('');
   const [folders, setFolders] = useState<RelationOption[]>([]);
+  const [foldersForSeries, setFoldersForSeries] = useState('');
   const [tags, setTags] = useState('');
   const [publish, setPublish] = useState(false);
   const [allowDownload, setAllowDownload] = useState(false);
@@ -104,13 +114,50 @@ export default function BulkAudioKathaUpload({
   }, []);
 
   useEffect(() => {
-    if (!seriesId) { setFolders([]); setFolderId(''); return; }
-    setFolderId('');
+    if (!seriesId) return;
+    let active = true;
     fetch(`/api/folders?series=${encodeURIComponent(seriesId)}`)
       .then((res) => res.json())
-      .then((data) => { if (data.success) setFolders(data.data); })
+      .then((data) => {
+        if (!active || !data.success || !Array.isArray(data.data)) return;
+        setFolders(data.data);
+        setFoldersForSeries(seriesId);
+      })
       .catch(() => {});
+    return () => { active = false; };
   }, [seriesId]);
+
+  function resolveDraftFolder(sourceFolder: string, selected: string[]): string | undefined {
+    if (foldersForSeries !== seriesId) return undefined;
+    const match = folders.find((folder) => folder.title === sourceFolder);
+    if (match && selected.includes(match._id)) return match._id;
+    return selected.length === 1 ? selected[0] : undefined;
+  }
+
+  function assignFolders(drafts: AudioDraft[], selected: string[]): AudioDraft[] {
+    return drafts.map((draft) => (
+      draft.folderId ? draft : { ...draft, folderId: resolveDraftFolder(draft.sourceFolder ?? '', selected) }
+    ));
+  }
+
+  function toggleFolder(folderId: string) {
+    const next = selectedFolderIds.includes(folderId)
+      ? selectedFolderIds.filter((id) => id !== folderId)
+      : [...selectedFolderIds, folderId];
+    setSelectedFolderIds(next);
+    setDrafts((drafts) => assignFolders(drafts, next));
+  }
+
+  function selectAllFolders() {
+    const all = folders.map((folder) => folder._id);
+    setSelectedFolderIds(all);
+    setDrafts((drafts) => assignFolders(drafts, all));
+  }
+
+  function clearSelectedFolders() {
+    setSelectedFolderIds([]);
+    setDrafts((drafts) => drafts.map((draft) => ({ ...draft, folderId: undefined })));
+  }
 
   function updateDraft(id: string, patch: Partial<AudioDraft>) {
     setDrafts((current) => current.map((draft) => (
@@ -130,14 +177,19 @@ export default function BulkAudioKathaUpload({
       const existing = new Set(current.map((draft) => fileKey(draft.audioFile)));
       const additions = selected
         .filter((file) => !existing.has(fileKey(file)))
-        .map((audioFile) => ({
-          id: `${fileKey(audioFile)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          audioFile,
-          title: titleFromFilename(audioFile.name),
-          thumbnailFile: artworkByStem.get(fileStem(audioFile.name)),
-          progress: 0,
-          status: 'pending' as const,
-        }))
+        .map((audioFile) => {
+          const sourceFolder = sourceFolderOf(audioFile);
+          return {
+            id: `${fileKey(audioFile)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            audioFile,
+            title: titleFromFilename(audioFile.name),
+            thumbnailFile: artworkByStem.get(fileStem(audioFile.name)),
+            sourceFolder: sourceFolder || undefined,
+            folderId: resolveDraftFolder(sourceFolder, selectedFolderIds),
+            progress: 0,
+            status: 'pending' as const,
+          };
+        })
         .sort((a, b) => a.audioFile.name.localeCompare(b.audioFile.name, undefined, { numeric: true }));
       if (!additions.length) toast.info('Those audio files are already in this intake.');
       return [...current, ...additions];
@@ -236,7 +288,7 @@ export default function BulkAudioKathaUpload({
           authorName: authorName || undefined,
           categoryId: categoryId || undefined,
           seriesId: seriesId || undefined,
-          folderId: folderId || undefined,
+          folderId: draft.folderId || undefined,
           tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
           published: publish,
           allowDownload,
@@ -354,7 +406,7 @@ export default function BulkAudioKathaUpload({
         <div>
           <p className="bulk-katha-kicker">Bulk audio intake</p>
           <h2 id="bulk-katha-title">Build kathas from audio collection</h2>
-          <p>Select any number of audio files or a whole folder. Uploads run two at a time; records create in groups of {MAX_BATCH_SIZE}.</p>
+          <p>Select any number of audio files or several folders at once. Files follow their source folder when a folder of the same name exists; assign others in the row below. Uploads run two at a time; records create in groups of {MAX_BATCH_SIZE}.</p>
         </div>
         <div className="bulk-katha-count">{completeCount}/{drafts.length} created</div>
       </div>
@@ -379,9 +431,25 @@ export default function BulkAudioKathaUpload({
           <div className="bulk-katha-defaults">
             <label>Speaker<input value={authorName} disabled={running} onChange={(event) => setAuthorName(event.target.value)} placeholder="Applied to all" /></label>
             <label>Category<select value={categoryId} disabled={running} onChange={(event) => setCategoryId(event.target.value)}><option value="">None</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}</select></label>
-            <label>Series<select value={seriesId} disabled={running} onChange={(event) => setSeriesId(event.target.value)}><option value="">None</option>{series.map((item) => <option key={item._id} value={item._id}>{item.title}</option>)}</select></label>
-            {seriesId && (
-              <label>Folder<select value={folderId} disabled={running} onChange={(event) => setFolderId(event.target.value)}><option value="">No folder</option>{folders.map((f) => <option key={f._id} value={f._id}>{f.title}</option>)}</select></label>
+            <label>Series<select value={seriesId} disabled={running} onChange={(event) => { setSeriesId(event.target.value); setSelectedFolderIds([]); setFolderSearch(''); setDrafts((current) => current.map((draft) => ({ ...draft, folderId: undefined }))); }}><option value="">None</option>{series.map((item) => <option key={item._id} value={item._id}>{item.title}</option>)}</select></label>
+            {seriesId && foldersForSeries === seriesId && (
+              <div className="bulk-katha-folders">
+                <span>Destination folders</span>
+                <div className="bulk-katha-folder-tools">
+                  <input value={folderSearch} disabled={running} placeholder="Search folders…" onChange={(event) => setFolderSearch(event.target.value)} />
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={running} onClick={selectAllFolders}>All</button>
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={running} onClick={clearSelectedFolders}>None</button>
+                </div>
+                <div className="bulk-katha-folder-list">
+                  {folders.filter((folder) => folder.title?.toLowerCase().includes(folderSearch.trim().toLowerCase())).map((folder) => (
+                    <label key={folder._id} className="bulk-katha-folder-item">
+                      <input type="checkbox" checked={selectedFolderIds.includes(folder._id)} disabled={running} onChange={() => toggleFolder(folder._id)} />
+                      <span>{folder.title}</span>
+                    </label>
+                  ))}
+                  {folders.length === 0 && <small>No folders in this series yet.</small>}
+                </div>
+              </div>
             )}
             <label>Tags<input value={tags} disabled={running} onChange={(event) => setTags(event.target.value)} placeholder="gurbani, ang 1" /></label>
             <label className="bulk-katha-check"><input type="checkbox" checked={publish} disabled={running} onChange={(event) => setPublish(event.target.checked)} /> Publish after upload</label>
@@ -443,8 +511,13 @@ export default function BulkAudioKathaUpload({
               >
                 <span className="bulk-katha-drag-handle" aria-label="Drag to reorder">⠿</span>
                 <span className="bulk-katha-index">{String(index + 1).padStart(2, '0')}</span>
-                <div className="bulk-katha-file"><strong>{draft.audioFile.name}</strong><small>Batch {Math.floor(index / MAX_BATCH_SIZE) + 1} · {Math.round(draft.audioFile.size / 1024 / 1024)} MB</small></div>
+                <div className="bulk-katha-file"><strong>{draft.audioFile.name}</strong><small>{draft.sourceFolder ? `${draft.sourceFolder} · ` : ''}Batch {Math.floor(index / MAX_BATCH_SIZE) + 1} · {Math.round(draft.audioFile.size / 1024 / 1024)} MB</small></div>
                 <label className="bulk-katha-title-input"><span>Title</span><input value={draft.title} disabled={draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { title: event.target.value })} /></label>
+                {foldersForSeries === seriesId ? (
+                  <label className="bulk-katha-folder-input"><span>Folder</span><select value={draft.folderId ?? ''} disabled={running || draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { folderId: event.target.value || undefined })}><option value="">No folder</option>{folders.map((folder) => <option key={folder._id} value={folder._id}>{folder.title}</option>)}</select></label>
+                ) : (
+                  <div className="bulk-katha-folder-input"><span>Folder</span><em>Select a series first</em></div>
+                )}
                 <label className="bulk-katha-artwork"><span>Artwork</span><div className="bulk-katha-artwork-control">{draft.thumbnailFile && artworkPreviewUrls[fileKey(draft.thumbnailFile)] ? <span className="bulk-katha-artwork-preview" role="img" aria-label="Selected artwork preview" style={{ backgroundImage: `url(${artworkPreviewUrls[fileKey(draft.thumbnailFile)]})` }} /> : <span className="bulk-katha-artwork-empty" aria-hidden>✦</span>}<select value={draft.thumbnailFile ? fileKey(draft.thumbnailFile) : ''} disabled={running || draft.status === 'created'} onChange={(event) => updateDraft(draft.id, { thumbnailFile: thumbnailFiles.find((file) => fileKey(file) === event.target.value), thumbnail: undefined })}><option value="">No artwork</option>{thumbnailFiles.map((file) => <option key={fileKey(file)} value={fileKey(file)}>{file.name}</option>)}</select></div></label>
                 <div className="bulk-katha-state"><strong>{draft.status === 'uploading' ? `${draft.progress}% uploading` : draft.status}</strong>{draft.error && <small>{draft.error}</small>}</div>
                 {!running && draft.status !== 'created' && <button type="button" className="bulk-katha-remove" onClick={() => setDrafts((current) => current.filter((item) => item.id !== draft.id))} aria-label={`Remove ${draft.title}`}>×</button>}
@@ -479,8 +552,18 @@ export default function BulkAudioKathaUpload({
         .bulk-katha-artwork-control select { flex: 1; }
         .bulk-katha-check { display: flex !important; align-items: center; gap: 8px; padding-top: 20px; }
         .bulk-katha-check input { min-width: auto !important; }
+        .bulk-katha-folders { display: grid; gap: 7px; }
+        .bulk-katha-folders > span { color: var(--color-text-secondary); font-size: 11px; font-weight: 700; }
+        .bulk-katha-folder-tools { display: flex; gap: 6px; align-items: center; }
+        .bulk-katha-folder-tools input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; font-size: var(--font-size-sm); }
+        .bulk-katha-folder-list { display: grid; gap: 2px; max-height: 190px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface); }
+        .bulk-katha-folder-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; cursor: pointer; }
+        .bulk-katha-folder-item:hover { background: var(--color-primary-alpha); }
+        .bulk-katha-folder-item input { min-width: auto !important; }
+        .bulk-katha-folder-item span { font-size: var(--font-size-xs); color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bulk-katha-folder-input em { font-style: normal; color: var(--color-text-muted); font-size: var(--font-size-xs); padding-bottom: 9px; }
         .bulk-katha-list { display: grid; gap: 8px; max-height: 520px; overflow: auto; }
-        .bulk-katha-row { display: grid; grid-template-columns: 24px 34px minmax(150px, 1.2fr) minmax(180px, 1fr) minmax(140px, .9fr) minmax(94px, .7fr) 30px; gap: var(--space-3); align-items: end; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); content-visibility: auto; contain-intrinsic-size: 74px; }
+        .bulk-katha-row { display: grid; grid-template-columns: 24px 34px minmax(150px, 1.2fr) minmax(180px, 1fr) minmax(130px, .9fr) minmax(140px, .9fr) minmax(94px, .7fr) 30px; gap: var(--space-3); align-items: end; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); content-visibility: auto; contain-intrinsic-size: 74px; }
         .bulk-katha-row.dragging { opacity: 0.4; }
         .bulk-katha-row.is-created { border-color: color-mix(in srgb, var(--color-success) 55%, var(--color-border)); }
         .bulk-katha-row.is-failed { border-color: color-mix(in srgb, var(--color-error) 55%, var(--color-border)); }
@@ -503,7 +586,7 @@ export default function BulkAudioKathaUpload({
         .bulk-upload-title-file { min-width: 160px; font-size: var(--font-size-xs); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
         .bulk-upload-title-row .input { flex: 1; }
         @media (max-width: 900px) { .bulk-katha-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bulk-katha-row { grid-template-columns: 24px 30px 1fr 1fr 28px; } .bulk-katha-file { grid-column: span 2; } .bulk-katha-state { grid-column: 3 / span 2; padding: 0; } }
-        @media (max-width: 560px) { .bulk-katha-heading, .bulk-katha-footer { display: grid; } .bulk-katha-defaults, .bulk-katha-row { grid-template-columns: 24px 28px 1fr 28px; } .bulk-katha-file, .bulk-katha-title-input, .bulk-katha-artwork, .bulk-katha-state { grid-column: 3; } .bulk-katha-row { align-items: center; } .bulk-katha-remove { grid-column: 4; grid-row: 1; } }
+        @media (max-width: 560px) { .bulk-katha-heading, .bulk-katha-footer { display: grid; } .bulk-katha-defaults, .bulk-katha-row { grid-template-columns: 24px 28px 1fr 28px; } .bulk-katha-file, .bulk-katha-title-input, .bulk-katha-artwork, .bulk-katha-folder-input, .bulk-katha-state { grid-column: 3; } .bulk-katha-row { align-items: center; } .bulk-katha-remove { grid-column: 4; grid-row: 1; } }
       `}</style>
     </section>
   );

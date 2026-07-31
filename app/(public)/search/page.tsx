@@ -3,7 +3,7 @@ import Link from 'next/link';
 import KathaGrid from '@/components/katha/KathaGrid';
 import KathaList from '@/components/katha/KathaList';
 import SearchForm from '@/components/layout/SearchForm';
-import { getKathas } from '@/services/kathaService';
+import { getKathas, getKathasBySeries } from '@/services/kathaService';
 import { getAllSeries } from '@/services/seriesService';
 import { getFoldersBySeries } from '@/services/folderService';
 import { IKatha, IFolder } from '@/types';
@@ -47,7 +47,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     if (activeSeries) {
       const [rawFolders, kathaResult] = await Promise.all([
         getFoldersBySeries(activeSeries._id),
-        getKathas({ q: q || undefined, series: activeSeries._id, type, sort: 'manual', limit: 5000, includeUnpublished: true }),
+        getKathasBySeries(activeSeries._id, { q: q || undefined, type }),
       ]);
       folders = serializeForClient(rawFolders) as unknown as IFolder[];
       const allKathas = serializeForClient(kathaResult.data) as unknown as IKatha[];

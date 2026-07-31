@@ -1,18 +1,57 @@
 'use client';
 import Link from 'next/link';
-import { IKatha } from '@/types';
+import { IKatha, IInteractionSummary } from '@/types';
 import { formatDuration, formatDate } from '@/lib/utils';
 import { getMediaUrl } from '@/lib/media';
+import { usePlayerContext } from '@/context/PlayerContext';
+import ListCardInteractions from '@/components/katha/ListCardInteractions';
 
 interface KathaCardProps {
   katha: Partial<IKatha> & { _id: string; title: string; slug: string; type: 'audio' | 'video' };
   layout?: 'grid' | 'list';
+  playlist?: Array<Partial<IKatha> & { _id: string; title: string; slug: string; type: 'audio' | 'video' }>;
+  index?: number;
+  summary?: IInteractionSummary;
+  interactionsLoading?: boolean;
+  onToggleLike?: (kathaId: string) => Promise<{ ok: boolean; requiresAuth?: boolean }>;
 }
 
-export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
+export default function KathaCard({
+  katha,
+  layout = 'grid',
+  playlist,
+  index = 0,
+  summary,
+  interactionsLoading = false,
+  onToggleLike,
+}: KathaCardProps) {
+  const { play, pause, resume, isPlaying, katha: currentKatha, playFromPlaylist } = usePlayerContext();
+
+  const isCurrent = currentKatha?._id === katha._id;
+  const isThisPlaying = isCurrent && isPlaying;
+  const canPlayInline = katha.type === 'audio' && Boolean(katha.audioUrl);
+
+  function handleInlinePlay(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!canPlayInline) return;
+    if (isCurrent) {
+      if (isPlaying) pause(); else resume();
+      return;
+    }
+    if (playlist && playlist.length > 0) {
+      const playlistIndex = playlist.findIndex((item) => item._id === katha._id);
+      if (playlistIndex >= 0) {
+        playFromPlaylist(playlist as IKatha[], playlistIndex);
+        return;
+      }
+    }
+    play(katha as IKatha);
+  }
+
   if (layout === 'list') {
     return (
-      <Link href={`/${katha.type}/${katha.slug}`} className="kc-list-card">
+      <Link href={`/${katha.type}/${katha.slug}`} className={`kc-list-card${isCurrent ? ' is-current' : ''}`}>
         <div className="kc-list-thumb">
           {katha.thumbnail ? (
             <img src={getMediaUrl('thumbnails', katha.thumbnail)} alt={katha.title} loading="lazy" />
@@ -35,15 +74,35 @@ export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
           </div>
         </div>
 
-        <button
-          className="kc-list-play"
-          aria-label={`Play ${katha.title}`}
-          onClick={(e) => e.preventDefault()}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
-        </button>
+        {onToggleLike && (
+          <ListCardInteractions
+            kathaId={katha._id}
+            slug={katha.slug}
+            type={katha.type}
+            summary={summary}
+            loading={interactionsLoading}
+            onToggleLike={onToggleLike}
+          />
+        )}
+
+        {canPlayInline && (
+          <button
+            className={`kc-list-play${isThisPlaying ? ' is-playing' : ''}`}
+            aria-label={isCurrent && isPlaying ? `Pause ${katha.title}` : `Play ${katha.title}`}
+            onClick={handleInlinePlay}
+          >
+            {isThisPlaying ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="4" width="4" height="16" rx="1"/>
+                <rect x="14" y="4" width="4" height="16" rx="1"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            )}
+          </button>
+        )}
 
         <style>{`
           .kc-list-card {
@@ -61,6 +120,10 @@ export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
             border-color: var(--color-primary);
             box-shadow: var(--shadow-sm);
             transform: translateX(4px);
+          }
+          .kc-list-card.is-current {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-sm);
           }
           .kc-list-thumb {
             width: 60px;
@@ -110,6 +173,14 @@ export default function KathaCard({ katha, layout = 'grid' }: KathaCardProps) {
             transition: all var(--transition-fast);
           }
           .kc-list-card:hover .kc-list-play { opacity: 1; }
+          .kc-list-play.is-playing { opacity: 1; animation: kcPulse 2.2s ease-in-out infinite; }
+          @keyframes kcPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(217, 140, 41, 0.45); }
+            50% { box-shadow: 0 0 0 8px rgba(217, 140, 41, 0); }
+          }
+          @media (max-width: 640px) {
+            .kc-list-play { opacity: 1; width: 36px; height: 36px; }
+          }
         `}</style>
       </Link>
     );

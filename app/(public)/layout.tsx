@@ -14,13 +14,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <Footer />
       <MobileNav />
       <MiniPlayer />
-      <style>{`
-        @media (max-width: 768px) {
-          .main-with-player {
-            padding-bottom: calc(var(--player-height) + var(--mobile-nav-height, 64px) + var(--space-4));
-          }
-        }
-      `}</style>
     </PlayerProvider>
   );
 }

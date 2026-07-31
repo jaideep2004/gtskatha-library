@@ -9,6 +9,8 @@
     "lint": "eslint",
     "migrate:katha-status": "tsx scripts/migrate-katha-status.ts",
     "migrate:katha-status:apply": "tsx scripts/migrate-katha-status.ts --apply",
+    "import:kathas": "tsx scripts/import-katha-collection.ts",
+    "import:kathas:dry": "tsx scripts/import-katha-collection.ts --dry-run",
     "seed:admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {

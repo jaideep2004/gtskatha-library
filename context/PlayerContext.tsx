@@ -28,6 +28,8 @@ interface PlayerContextValue {
   // Playlist
   playlist: IKatha[];
   playlistIndex: number;
+  isShuffled: boolean;
+  repeatMode: 'off' | 'all' | 'one';
   // Audio ref — shared across components
   audioRef: React.RefObject<HTMLAudioElement | null>;
   // Actions
@@ -35,6 +37,8 @@ interface PlayerContextValue {
   playFromPlaylist: (kathas: IKatha[], startIndex?: number) => void;
   nextTrack: () => void;
   prevTrack: () => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
   pause: () => void;
   resume: () => void;
   seek: (time: number) => void;
@@ -60,8 +64,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isBuffering, setIsBuffering] = useState(false);
   const [playlist, setPlaylist] = useState<IKatha[]>([]);
   const [playlistIndex, setPlaylistIndex] = useState(-1);
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
   const playlistRef = useRef<IKatha[]>([]);
   const playlistIndexRef = useRef(-1);
+  const repeatRef = useRef<'off' | 'all' | 'one'>('off');
   const kathaRef = useRef<IKatha | null>(null);
   const playRef = useRef<(katha: IKatha, options?: { startAt?: number }) => void>(() => {});
   const lastSavedAtRef = useRef(0);
@@ -115,7 +122,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       saveProgress(audio.duration);
       const pList = playlistRef.current;
       const pIdx = playlistIndexRef.current;
-      const nextIdx = pIdx + 1;
+      if (repeatRef.current === 'one' && pList.length > 0) {
+        playRef.current(pList[pIdx]);
+        return;
+      }
+      let nextIdx = pIdx + 1;
+      if (pList.length > 0 && nextIdx >= pList.length && repeatRef.current === 'all') {
+        nextIdx = 0;
+      }
       if (pList.length > 0 && nextIdx < pList.length) {
         playRef.current(pList[nextIdx]);
         setPlaylistIndex(nextIdx);
@@ -277,7 +291,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const skip = useCallback((seconds: number) => {
     const audio = audioRef.current;
-    const newTime = Math.max(0, Math.min(duration || 0, currentTime + seconds));
+    const knownDuration = duration > 0
+      ? duration
+      : Number(kathaRef.current?.duration || 0);
+    const max = knownDuration > 0 ? knownDuration : currentTime + 3600;
+    const newTime = Math.max(0, Math.min(max, currentTime + seconds));
     if (audio) audio.currentTime = newTime;
     setCurrentTime(newTime);
   }, [currentTime, duration]);
@@ -313,6 +331,37 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [play]);
 
+  const toggleShuffle = useCallback(() => {
+    setIsShuffled((shuffled) => {
+      const next = !shuffled;
+      const pList = playlistRef.current;
+      const current = pList[playlistIndexRef.current];
+      if (next && pList.length > 1) {
+        const shuffledList = [...pList];
+        const currentIndex = shuffledList.findIndex((item) => item._id === current?._id);
+        if (currentIndex >= 0) shuffledList.splice(currentIndex, 1);
+        for (let i = shuffledList.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledList[i], shuffledList[j]] = [shuffledList[j], shuffledList[i]];
+        }
+        if (current) shuffledList.unshift(current);
+        playlistRef.current = shuffledList;
+        setPlaylist(shuffledList);
+        setPlaylistIndex(0);
+        playlistIndexRef.current = 0;
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode((mode) => {
+      const nextMode = mode === 'off' ? 'all' : mode === 'all' ? 'one' : 'off';
+      repeatRef.current = nextMode;
+      return nextMode;
+    });
+  }, []);
+
   const close = useCallback(() => {
     saveProgress();
     audioRef.current?.pause();
@@ -326,6 +375,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setPlaylistIndex(-1);
     playlistRef.current = [];
     playlistIndexRef.current = -1;
+    setIsShuffled(false);
+    setRepeatMode('off');
+    repeatRef.current = 'off';
   }, [saveProgress]);
 
   return (
@@ -342,11 +394,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         isVisible,
         playlist,
         playlistIndex,
+        isShuffled,
+        repeatMode,
         audioRef,
         play,
         playFromPlaylist,
         nextTrack,
         prevTrack,
+        toggleShuffle,
+        toggleRepeat,
         pause,
         resume,
         seek,

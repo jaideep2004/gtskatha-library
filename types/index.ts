@@ -193,3 +193,10 @@ export interface IInteractionSnapshot {
   commentAccess: CommentAccess;
   canComment: boolean;
 }
+
+export interface IInteractionSummary {
+  likeCount: number;
+  commentCount: number;
+  likedByViewer: boolean;
+  isAuthenticated: boolean;
+}

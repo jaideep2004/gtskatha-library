@@ -22,8 +22,14 @@ export default function MiniPlayer() {
     seek,
     setVolume,
     toggleMute,
-    skip,
     close,
+    playlist,
+    prevTrack,
+    nextTrack,
+    isShuffled,
+    repeatMode,
+    toggleShuffle,
+    toggleRepeat,
   } = usePlayerContext();
   const { data: interactions } = useTimelineInteractions(katha?._id, Boolean(katha));
 
@@ -31,6 +37,7 @@ export default function MiniPlayer() {
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
   const thumbSrc = getThumbnailUrl(katha.thumbnail);
+  const hasPlaylist = playlist.length > 1;
 
   function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
     seek(parseFloat(e.target.value));
@@ -56,18 +63,25 @@ export default function MiniPlayer() {
       <div className="mini-player-content">
         <div className="mini-player-info">
           <div className="mini-player-thumb">
-            {/* THUMB SLOT: dynamic from katha.thumbnail */}
-            <img
-              src={thumbSrc}
-              alt={katha.title}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('style');
-              }}
-            />
-            <div className="mini-player-thumb-placeholder" style={{ display: 'none' }}>
-              <span>☬</span>
-            </div>
+            {thumbSrc ? (
+              <>
+                <img
+                  src={thumbSrc}
+                  alt={katha.title}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('style');
+                  }}
+                />
+                <div className="mini-player-thumb-placeholder" style={{ display: 'none' }}>
+                  <span>☬</span>
+                </div>
+              </>
+            ) : (
+              <div className="mini-player-thumb-placeholder">
+                <span>☬</span>
+              </div>
+            )}
           </div>
 
           <div className="mini-player-meta">
@@ -79,7 +93,12 @@ export default function MiniPlayer() {
         </div>
 
         <div className="mini-player-controls">
-          <button className="mp-ctrl" aria-label="Shuffle">
+          <button
+            className={`mp-ctrl${isShuffled ? ' is-active' : ''}`}
+            aria-label={isShuffled ? 'Shuffle is on' : 'Shuffle'}
+            aria-pressed={isShuffled}
+            onClick={toggleShuffle}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
               <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
@@ -87,12 +106,14 @@ export default function MiniPlayer() {
             </svg>
           </button>
 
-          <button className="mp-ctrl" aria-label="Previous" onClick={() => skip(-15)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="19 20 9 12 19 4 19 20"/>
-              <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-          </button>
+          {hasPlaylist && (
+            <button className="mp-ctrl" aria-label="Previous track" onClick={prevTrack}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="19 20 9 12 19 4 19 20"/>
+                <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
+          )}
 
           <button
             className="mp-play"
@@ -111,18 +132,33 @@ export default function MiniPlayer() {
             )}
           </button>
 
-          <button className="mp-ctrl" aria-label="Next" onClick={() => skip(15)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5 4 15 12 5 20 5 4"/>
-              <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-          </button>
+          {hasPlaylist && (
+            <button className="mp-ctrl" aria-label="Next track" onClick={nextTrack}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 4 15 12 5 20 5 4"/>
+                <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
+          )}
 
-          <button className="mp-ctrl" aria-label="Repeat">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-              <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-            </svg>
+          <button
+            className={`mp-ctrl${repeatMode !== 'off' ? ' is-active' : ''}`}
+            aria-label={repeatMode === 'one' ? 'Repeat one is on' : repeatMode === 'all' ? 'Repeat all is on' : 'Repeat'}
+            aria-pressed={repeatMode !== 'off'}
+            onClick={toggleRepeat}
+          >
+            {repeatMode === 'one' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                <line x1="11" y1="9" x2="11" y2="15" strokeWidth="1.5"/><circle cx="11" cy="12" r="0.5" fill="currentColor"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+            )}
           </button>
         </div>
 
@@ -291,6 +327,11 @@ export default function MiniPlayer() {
           background: rgba(255,255,255,0.08);
         }
 
+        .mp-ctrl.is-active {
+          color: var(--color-primary);
+          background: rgba(215, 154, 47, 0.14);
+        }
+
         .mp-play {
           width: 46px;
           height: 46px;
@@ -376,7 +417,17 @@ export default function MiniPlayer() {
           }
           .mini-player-right { display: none; }
           .mini-player-info { flex: 0 0 140px; }
-          .mini-player-content { padding: 8px 16px; }
+          .mini-player-content { padding: 8px 16px; gap: 12px; }
+        }
+
+        @media (max-width: 560px) {
+          .mini-player-controls .mp-ctrl:first-child,
+          .mini-player-controls .mp-ctrl:last-child { display: none; }
+          .mini-player-info { flex: 0 0 112px; }
+          .mini-player-thumb { width: 40px; height: 40px; }
+          .mini-player-content { padding: 8px 12px; gap: 8px; }
+          .mini-player-controls { gap: 2px; }
+          .mp-play { width: 40px; height: 40px; }
         }
       `}</style>
     </div>

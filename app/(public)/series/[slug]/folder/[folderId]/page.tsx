@@ -2,16 +2,18 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import KathaList from '@/components/katha/KathaList';
+import PaginationControls from '@/components/katha/PaginationControls';
 import { getSeriesBySlug } from '@/services/seriesService';
 import { getFolderById } from '@/services/folderService';
-import { getKathas } from '@/services/kathaService';
+import { getKathas, getKathasByFolder } from '@/services/kathaService';
 import { ISeries, IFolder, IKatha } from '@/types';
-import { getThumbnailUrl } from '@/lib/utils';
 import { getMediaUrl } from '@/lib/media';
 import { serializeForClient } from '@/lib/serialize';
+import { PAGE_SIZES, parsePage, parsePageSize } from '@/lib/pagination';
 
 interface PageProps {
   params: Promise<{ slug: string; folderId: string }>;
+  searchParams: Promise<{ page?: string | string[]; size?: string | string[] }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -21,8 +23,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: folder.title };
 }
 
-export default async function FolderDetailPage({ params }: PageProps) {
+export default async function FolderDetailPage({ params, searchParams }: PageProps) {
   const { slug, folderId } = await params;
+  const { page: rawPage, size: rawSize } = await searchParams;
+  const page = parsePage(rawPage);
+  const size = parsePageSize(rawSize);
 
   const [rawSeries, rawFolder] = await Promise.all([
     getSeriesBySlug(slug) as Promise<ISeries | null>,
@@ -33,9 +38,16 @@ export default async function FolderDetailPage({ params }: PageProps) {
   const folder = rawFolder ? serializeForClient(rawFolder) : null;
 
   if (!series || !folder) notFound();
+  const seriesId = (series as ISeries & { _id: string })._id;
+  if (folder.seriesId !== seriesId) notFound();
 
-  const result = await getKathas({ folder: folderId, sort: 'manual', limit: 5000, includeUnpublished: true });
+  const result = await getKathas({ folder: folderId, sort: 'manual', page, limit: size });
   const kathas = serializeForClient(result.data) as unknown as IKatha[];
+  const totalKathas = result.total;
+  const totalPages = result.totalPages;
+
+  const playlistResult = await getKathasByFolder(folderId);
+  const playAllKathas = serializeForClient(playlistResult.data) as unknown as IKatha[];
 
   const thumbSrc = series.thumbnail
     ? getMediaUrl('series', series.thumbnail)
@@ -65,13 +77,23 @@ export default async function FolderDetailPage({ params }: PageProps) {
             <h1 className="folder-detail-title">{folder.title}</h1>
             <p className="folder-detail-series">
               <Link href={`/series/${slug}`}>{series.title}</Link>
-              <span className="folder-detail-count">{kathas.length} {kathas.length === 1 ? 'ਅਧਿਆਇ' : 'ਅਧਿਆਇ'}</span>
+              <span className="folder-detail-count">{totalKathas} ਅਧਿਆਇ</span>
             </p>
           </div>
         </div>
 
         {kathas.length > 0 ? (
-          <KathaList kathas={kathas} />
+          <>
+            <KathaList kathas={kathas} playAllKathas={playAllKathas} />
+            <PaginationControls
+              basePath={`/series/${slug}/folder/${folderId}`}
+              page={page}
+              size={size}
+              total={totalKathas}
+              totalPages={totalPages}
+              sizes={[...PAGE_SIZES]}
+            />
+          </>
         ) : (
           <div className="empty-state">
             <h3>ਇਸ ਫੋਲਡਰ ਵਿੱਚ ਕੋਈ ਅਧਿਆਇ ਨਹੀਂ</h3>

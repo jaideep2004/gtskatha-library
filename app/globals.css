@@ -775,7 +775,13 @@ p {
 
 /* ===== MAIN CONTENT OFFSET ===== */
 .main-with-player {
-  /* padding-bottom: calc(var(--player-height) + var(--space-4)); */
+  padding-bottom: calc(var(--player-height) + var(--space-4));
+}
+
+@media (max-width: 768px) {
+  .main-with-player {
+    padding-bottom: calc(var(--player-height) + var(--mobile-nav-height, 64px) + var(--space-4));
+  }
 }
 
 /* ===== PREMIUM ANIMATIONS — Task 21 ===== */

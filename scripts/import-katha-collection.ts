@@ -3,15 +3,25 @@
  *
  * Usage:
  *   npm run import:kathas -- --root "<path>" [--series <slug>] [--draft] [--dry-run]
+ *       [--group-by <N>] [--bucket-size <N>]
  *
  * - Walks top-level folders in name order (Ang-0001, Ang-0002, ... Ang-0356).
- * - Creates one Folder per source folder (title = folder name) under the series.
- * - Creates one published audio Katha per file, in name order, with a global
- *   sequential sortOrder so the whole collection plays in order.
+ * - --group-by <N>: bundles N consecutive source folders into one destination
+ *   folder (title "Ang 1 - Ang 100"). Files keep source-folder order.
+ * - --bucket-size <N> (recommended): ignores source-folder boundaries and
+ *   assigns each file to a destination folder from the Ang number in the
+ *   FILENAME ("Guru Granth Sahib Ji Ang-0162-Pankti-06.mp3" -> Ang 162).
+ *   Buckets are N consecutive Angs: 1-100 -> "Ang 1 - Ang 100",
+ *   101-200 -> "Ang 101 - Ang 200", etc. Files are sorted by Ang then Pankti
+ *   inside each folder. Files without a parseable Ang number fall back to one
+ *   folder per source folder.
+ * - Either flag may be omitted: the default creates one Folder per source
+ *   folder (title = folder name).
+ * - Creates one published audio Katha per file with a global sequential
+ *   sortOrder so the whole collection plays in order.
  * - audioUrl is the relative path from the media audio root
- *   (e.g. "Ang-0029/Guru Granth Sahib Ji Ang-0029-Pankti-02.mp3").
- *   SFTP the source tree into <MEDIA_STORAGE_ROOT>/audio on the VPS first so
- *   /uploads/audio/... resolves via Nginx.
+ *   (e.g. "Ang-0029/Guru Granth Sahib Ji Ang-0029-Pankti-02.mp3"), so the
+ *   SFTP'd folder tree at <MEDIA_STORAGE_ROOT>/audio must keep its structure.
  * - Idempotent: files whose audioUrl already exists in the series are skipped.
  * - Durations are probed with ffprobe when available; otherwise left undefined.
  */
@@ -46,7 +56,14 @@ function loadEnv() {
   }
 }
 
-function parseArgs(): { root: string; series: string; draft: boolean; dryRun: boolean } {
+function parseArgs(): {
+  root: string;
+  series: string;
+  draft: boolean;
+  dryRun: boolean;
+  groupBy: number;
+  bucketSize: number;
+} {
   const args = process.argv.slice(2);
   const get = (flag: string) => {
     const index = args.indexOf(flag);
@@ -54,12 +71,47 @@ function parseArgs(): { root: string; series: string; draft: boolean; dryRun: bo
   };
   const root = get('--root') ?? 'C:\\Users\\jaisi\\Downloads\\katha files - Copy\\organized';
   const series = get('--series') ?? 'sri-guru-granth-sahib';
+  const parsedGroupBy = Number.parseInt(get('--group-by') ?? '', 10);
+  const parsedBucketSize = Number.parseInt(get('--bucket-size') ?? '', 10);
   return {
     root,
     series,
     draft: args.includes('--draft'),
     dryRun: args.includes('--dry-run'),
+    groupBy: Number.isFinite(parsedGroupBy) && parsedGroupBy >= 2 ? parsedGroupBy : 1,
+    bucketSize: Number.isFinite(parsedBucketSize) && parsedBucketSize >= 2 ? parsedBucketSize : 1,
   };
+}
+
+function leadingNumber(folderName: string): number | null {
+  const match = folderName.match(/(\d+)/);
+  if (!match) return null;
+  const value = Number.parseInt(match[1], 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+function angFromFilename(fileName: string): number | null {
+  const match = fileName.match(/ang-?(\d+)/i);
+  if (!match) return null;
+  const value = Number.parseInt(match[1], 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+function panktiFromFilename(fileName: string): number | null {
+  const match = fileName.match(/pankti-?(\d+)/i);
+  if (!match) return null;
+  const value = Number.parseInt(match[1], 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+function compareFilesByAng(a: ImportedFile, b: ImportedFile): number {
+  const aAng = angFromFilename(a.fileName) ?? Number.POSITIVE_INFINITY;
+  const bAng = angFromFilename(b.fileName) ?? Number.POSITIVE_INFINITY;
+  if (aAng !== bAng) return aAng - bAng;
+  const aPankti = panktiFromFilename(a.fileName) ?? Number.POSITIVE_INFINITY;
+  const bPankti = panktiFromFilename(b.fileName) ?? Number.POSITIVE_INFINITY;
+  if (aPankti !== bPankti) return aPankti - bPankti;
+  return a.fileName.localeCompare(b.fileName, undefined, { numeric: true });
 }
 
 function generateSlug(text: string): string {
@@ -157,7 +209,7 @@ async function probeWithConcurrency(
 
 async function main() {
   loadEnv();
-  const { root, series: seriesSlug, draft, dryRun } = parseArgs();
+  const { root, series: seriesSlug, draft, dryRun, groupBy, bucketSize } = parseArgs();
 
   if (!fs.existsSync(root)) {
     console.error(`Source folder not found: ${root}`);
@@ -218,30 +270,108 @@ async function main() {
   let sortCounter = maxSort;
   const toCreate: Array<{ folder: { title: string; sortOrder: number } | null; files: ImportedFile[] }> = [];
 
-  for (const folderName of sourceFolders) {
-    const folderPath = path.join(root, folderName);
-    const files = fs
-      .readdirSync(folderPath)
-      .filter(isAudioFile)
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-      .map((fileName) => {
-        const audioUrl = `${folderName}/${fileName}`;
-        return {
-          fileName,
-          relativePath: folderName,
-          title: titleFromFilename(fileName),
-          slug: uniqueSlug(generateSlug(titleFromFilename(fileName)), usedSlugs),
-          audioUrl,
-          fullPath: path.join(folderPath, fileName),
-        };
-      })
-      .filter((file) => !existingAudioUrls.has(file.audioUrl));
+  function buildFile(folderName: string, fileName: string): ImportedFile | null {
+    const audioUrl = `${folderName}/${fileName}`;
+    if (existingAudioUrls.has(audioUrl)) return null;
+    return {
+      fileName,
+      relativePath: folderName,
+      title: titleFromFilename(fileName),
+      slug: uniqueSlug(generateSlug(titleFromFilename(fileName)), usedSlugs),
+      audioUrl,
+      fullPath: path.join(root, folderName, fileName),
+    };
+  }
 
-    if (files.length === 0) {
-      console.log(`  ${folderName}: all files already imported, skipped.`);
+  const rawGroups: Array<{ title: string; files: ImportedFile[] }> = [];
+
+  if (bucketSize > 1) {
+    const buckets = new Map<number, ImportedFile[]>();
+    const noAngByFolder = new Map<string, ImportedFile[]>();
+    for (const folderName of sourceFolders) {
+      const folderPath = path.join(root, folderName);
+      const folderFiles = fs
+        .readdirSync(folderPath)
+        .filter(isAudioFile)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .map((fileName) => buildFile(folderName, fileName))
+        .filter((file): file is ImportedFile => file !== null);
+      for (const file of folderFiles) {
+        const ang = angFromFilename(file.fileName);
+        if (ang === null) {
+          const list = noAngByFolder.get(folderName) ?? [];
+          list.push(file);
+          noAngByFolder.set(folderName, list);
+        } else {
+          const key = Math.floor((ang - 1) / bucketSize);
+          const list = buckets.get(key) ?? [];
+          list.push(file);
+          buckets.set(key, list);
+        }
+      }
+    }
+    for (const key of [...buckets.keys()].sort((a, b) => a - b)) {
+      const files = buckets.get(key)!.sort(compareFilesByAng);
+      const angs = files
+        .map((file) => angFromFilename(file.fileName)!)
+        .sort((a, b) => a - b);
+      rawGroups.push({ title: `Ang ${angs[0]} - Ang ${angs[angs.length - 1]}`, files });
+    }
+    for (const [folderName, files] of noAngByFolder) {
+      files.sort((a, b) => a.fileName.localeCompare(b.fileName, undefined, { numeric: true }));
+      rawGroups.push({ title: folderName, files });
+    }
+  } else {
+    const sourceGroups: Array<{ sourceFolders: string[] }> = [];
+    if (groupBy > 1) {
+      for (let i = 0; i < sourceFolders.length; i += groupBy) {
+        sourceGroups.push({ sourceFolders: sourceFolders.slice(i, i + groupBy) });
+      }
+    } else {
+      sourceFolders.forEach((name) => sourceGroups.push({ sourceFolders: [name] }));
+    }
+
+    for (const group of sourceGroups) {
+      const files: ImportedFile[] = [];
+      const firstNumber = leadingNumber(group.sourceFolders[0]);
+      const lastNumber = leadingNumber(group.sourceFolders[group.sourceFolders.length - 1]);
+      const useRangeTitle =
+        group.sourceFolders.length > 1 &&
+        firstNumber !== null &&
+        lastNumber !== null &&
+        group.sourceFolders.every((name) => leadingNumber(name) !== null);
+      const folderTitle = useRangeTitle
+        ? `Ang ${firstNumber} - Ang ${lastNumber}`
+        : group.sourceFolders.length === 1
+          ? group.sourceFolders[0]
+          : group.sourceFolders.join(' - ');
+
+      for (const folderName of group.sourceFolders) {
+        const folderPath = path.join(root, folderName);
+        files.push(
+          ...fs
+            .readdirSync(folderPath)
+            .filter(isAudioFile)
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            .map((fileName) => buildFile(folderName, fileName))
+            .filter((file): file is ImportedFile => file !== null)
+        );
+      }
+
+      if (files.length === 0) {
+        console.log(`  ${folderTitle}: all files already imported, skipped.`);
+        continue;
+      }
+      rawGroups.push({ title: folderTitle, files });
+    }
+  }
+
+  for (const group of rawGroups) {
+    if (group.files.length === 0) {
+      console.log(`  ${group.title}: all files already imported, skipped.`);
       continue;
     }
-    toCreate.push({ folder: { title: folderName, sortOrder: folderSortCounter++ }, files });
+    toCreate.push({ folder: { title: group.title, sortOrder: folderSortCounter++ }, files: group.files });
   }
 
   const rootImports = rootFiles
@@ -256,8 +386,10 @@ async function main() {
     .filter((file) => !existingAudioUrls.has(file.audioUrl));
 
   const totalNew = toCreate.reduce((sum, group) => sum + group.files.length, 0) + rootImports.length;
+  const modeLabel = bucketSize > 1 ? `bucket-size ${bucketSize}` : `group-by ${groupBy}`;
   console.log(
-    `\nPlan: ${sourceFolders.length} source folders, ${totalNew} new kathas ` +
+    `\nPlan: ${sourceFolders.length} source folders -> ${toCreate.length} destination folders ` +
+    `(${modeLabel}), ${totalNew} new kathas ` +
     `(existing: ${existingKathas.length}), mode: ${draft ? 'draft' : 'published'}, dry-run: ${dryRun}`
   );
 

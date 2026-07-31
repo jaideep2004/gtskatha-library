@@ -71,12 +71,6 @@ function isArtworkFile(file: File) {
   return file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name);
 }
 
-function splitIntoBatches<T>(items: T[], size: number) {
-  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => (
-    items.slice(index * size, (index + 1) * size)
-  ));
-}
-
 export default function BulkAudioKathaUpload({
   categories,
   series,
@@ -268,18 +262,21 @@ export default function BulkAudioKathaUpload({
     }
   }
 
-  async function createReadyKathas(readyInput: AudioDraft[], sortOffset: number): Promise<number> {
+  async function createReadyKathas(
+    readyInput: AudioDraft[],
+    sortOrderById: Map<string, number>
+  ): Promise<number> {
     if (!readyInput.length) return 0;
 
-    const ready = [...readyInput].sort((a, b) =>
-      a.audioFile.name.localeCompare(b.audioFile.name, undefined, { numeric: true })
+    const ready = [...readyInput].sort(
+      (a, b) => (sortOrderById.get(a.id) ?? 0) - (sortOrderById.get(b.id) ?? 0)
     );
     ready.forEach((draft) => updateDraft(draft.id, { status: 'creating', error: undefined }));
     const response = await fetch('/api/kathas/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        items: ready.map((draft, idx) => ({
+        items: ready.map((draft) => ({
           clientId: draft.id,
           title: draft.title,
           type: 'audio',
@@ -292,7 +289,7 @@ export default function BulkAudioKathaUpload({
           tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
           published: publish,
           allowDownload,
-          sortOrder: sortOffset + idx,
+          sortOrder: sortOrderById.get(draft.id),
         })),
       }),
     });
@@ -310,27 +307,6 @@ export default function BulkAudioKathaUpload({
       if (ok) successCount += 1;
     }
     return successCount;
-  }
-
-  async function uploadBatch(
-    batch: AudioDraft[],
-    controller: AbortController,
-    thumbnailUploads: Map<File, Promise<string>>
-  ) {
-    const ready = batch.filter((draft) => draft.status === 'ready' && draft.audioUrl);
-    const queue = batch.filter((draft) => draft.status !== 'ready');
-    const uploaded: AudioDraft[] = [];
-    let cursor = 0;
-    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-      while (cursor < queue.length && !controller.signal.aborted) {
-        const draft = queue[cursor];
-        cursor += 1;
-        const result = await uploadDraft(draft, controller, thumbnailUploads);
-        if (result) uploaded.push(result);
-      }
-    });
-    await Promise.all(workers);
-    return [...ready, ...uploaded];
   }
 
   async function startBatch() {
@@ -353,51 +329,90 @@ export default function BulkAudioKathaUpload({
     const controller = new AbortController();
     abortRef.current = controller;
     const thumbnailUploads = new Map<File, Promise<string>>();
-    const batches = splitIntoBatches(candidates, MAX_BATCH_SIZE);
 
-    let createdCount = 0;
+    let baseSortOrder = 0;
     if (seriesId) {
       try {
-        const res = await fetch(`/api/kathas?series=${encodeURIComponent(seriesId)}&sort=manual&limit=1000&page=1`);
+        const res = await fetch(`/api/admin/kathas/sort-base?seriesId=${encodeURIComponent(seriesId)}`, {
+          cache: 'no-store',
+        });
         const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          const items = json.data as Array<{ sortOrder?: number }>;
-          const maxSort = items.reduce((max, k) => Math.max(max, k.sortOrder ?? 0), 0);
-          createdCount = maxSort + 1;
+        if (json.success && Number.isFinite(json.data?.maxSort)) {
+          baseSortOrder = json.data.maxSort + 1;
         }
       } catch {}
     }
 
-    try {
-      for (const [index, batch] of batches.entries()) {
-        if (controller.signal.aborted) break;
-        setActiveBatch({ current: index + 1, total: batches.length });
-        const ready = await uploadBatch(batch, controller, thumbnailUploads);
-        if (controller.signal.aborted || !ready.length) continue;
-        try {
-          createdCount += await createReadyKathas(ready, createdCount);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Katha creation failed. Retry this batch.';
-          ready.forEach((draft) => updateDraft(draft.id, { status: 'failed', error: message }));
-          toast.error(`Batch ${index + 1} failed to create. Remaining batches continue.`);
+    const sortOrderById = new Map<string, number>();
+    candidates.forEach((draft, index) => sortOrderById.set(draft.id, baseSortOrder + index));
+
+    const createQueue: AudioDraft[] = [];
+    let creating = false;
+    let createdCount = 0;
+    const totalGroups = Math.ceil(candidates.length / MAX_BATCH_SIZE);
+
+    const flushCreateQueue = async () => {
+      if (creating) return;
+      creating = true;
+      try {
+        while (createQueue.length > 0 && !controller.signal.aborted) {
+          const group = createQueue.splice(0, MAX_BATCH_SIZE);
+          setActiveBatch({ current: Math.min(Math.ceil(createdCount / MAX_BATCH_SIZE) + 1, totalGroups), total: totalGroups });
+          try {
+            createdCount += await createReadyKathas(group, sortOrderById);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Katha creation failed. Retry this batch.';
+            group.forEach((draft) => updateDraft(draft.id, { status: 'failed', error: message }));
+            toast.error('A creation batch failed. Remaining items continue.');
+          }
         }
+      } finally {
+        creating = false;
       }
-      if (!controller.signal.aborted) {
-        toast.success('All selected batches finished. Review any rows marked failed.');
-        onComplete();
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Bulk upload failed');
-      setDrafts((current) => current.map((draft) => (
-        draft.status === 'creating'
-          ? { ...draft, status: 'failed', error: 'Katha creation failed. Retry this batch.' }
-          : draft
-      )));
-    } finally {
-      setRunning(false);
-      setActiveBatch(null);
-      abortRef.current = null;
+    };
+
+    const queueForCreate = (draft: AudioDraft) => {
+      if (controller.signal.aborted) return;
+      createQueue.push(draft);
+      void flushCreateQueue();
+    };
+
+    candidates
+      .filter((draft) => draft.status === 'ready' && draft.audioUrl)
+      .forEach(queueForCreate);
+
+    await new Promise<void>((resolve) => {
+      const queue = candidates.filter((draft) => draft.status !== 'ready');
+      let cursor = 0;
+      let activeUploads = 0;
+      const maybeDone = () => {
+        if (cursor >= queue.length && activeUploads === 0) resolve();
+      };
+      const worker = async () => {
+        while (cursor < queue.length && !controller.signal.aborted) {
+          const draft = queue[cursor];
+          cursor += 1;
+          activeUploads += 1;
+          const result = await uploadDraft(draft, controller, thumbnailUploads);
+          activeUploads -= 1;
+          if (result) queueForCreate(result);
+        }
+        maybeDone();
+      };
+      const workerCount = Math.min(CONCURRENCY, queue.length);
+      for (let i = 0; i < workerCount; i += 1) void worker();
+      if (workerCount === 0) maybeDone();
+    });
+
+    await flushCreateQueue();
+
+    if (!controller.signal.aborted) {
+      toast.success('All uploads finished. Review any rows marked failed.');
+      onComplete();
     }
+    setRunning(false);
+    setActiveBatch(null);
+    abortRef.current = null;
   }
 
   return (
@@ -406,7 +421,7 @@ export default function BulkAudioKathaUpload({
         <div>
           <p className="bulk-katha-kicker">Bulk audio intake</p>
           <h2 id="bulk-katha-title">Build kathas from audio collection</h2>
-          <p>Select any number of audio files or several folders at once. Files follow their source folder when a folder of the same name exists; assign others in the row below. Uploads run two at a time; records create in groups of {MAX_BATCH_SIZE}.</p>
+          <p>Select any number of audio files or several folders at once. Files follow their source folder when a folder of the same name exists; assign others in the row below. Uploads run {CONCURRENCY} at a time, and every katha is created the moment its file is ready.</p>
         </div>
         <div className="bulk-katha-count">{completeCount}/{drafts.length} created</div>
       </div>

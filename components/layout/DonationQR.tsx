@@ -48,7 +48,8 @@ export default function DonationQR() {
         @keyframes donationPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
         @keyframes donationFadeIn{from{opacity:0}to{opacity:1}}
         @keyframes donationPop{from{opacity:0;transform:scale(.85) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
-        @media(max-width:480px){.donation-qr-wrap{bottom:16px;right:16px}.donation-qr-toggle{padding:8px 14px;font-size:12px}.donation-qr-img{width:180px;height:180px}}
+        @media(max-width:480px){.donation-qr-wrap{bottom:calc(var(--mobile-nav-height, 64px) + 12px);right:16px}.donation-qr-toggle{padding:8px 14px;font-size:12px}.donation-qr-img{width:180px;height:180px}}
+        @media(max-width:768px){.donation-qr-wrap{bottom:calc(var(--mobile-nav-height, 64px) + 12px)}}
       `}</style>
     </div>
   );

@@ -125,6 +125,7 @@ export default function AdminLayout({
     if (typeof window !== 'undefined') return localStorage.getItem('admin-theme') === 'dark';
     return false;
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark-admin', dark);
@@ -146,7 +147,8 @@ export default function AdminLayout({
   return (
     <div className="admin-wrap">
       {/* Sidebar */}
-      <aside className="admin-sidebar">
+      {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`admin-sidebar ${sidebarOpen ? 'admin-sidebar-open' : ''}`}>
         <div className="admin-sidebar-logo">
           <Link href="/admin/dashboard" className="admin-logo-link">
             <span className="admin-logo-khanda">☬</span>
@@ -192,7 +194,14 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="admin-content">
         <header className="admin-topbar">
-          <div><strong>{adminNav.find((item) => item.href === pathname)?.label ?? 'Admin'}</strong><small>Sikh Katha Digital Library</small></div>
+          <div className="admin-topbar-left">
+            <button className="admin-sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            <div><strong>{adminNav.find((item) => item.href === pathname)?.label ?? 'Admin'}</strong><small>Sikh Katha Digital Library</small></div>
+          </div>
           <div className="admin-top-actions">
             <button onClick={toggleDark} aria-label={dark ? 'Light mode' : 'Dark mode'}>
               {dark ? <LightModeOutlined fontSize="small" /> : <DarkModeOutlined fontSize="small" />}
@@ -267,7 +276,8 @@ export default function AdminLayout({
         .dark-admin .dash-actions a{background:rgba(255,255,255,.04);border-color:#334155;color:#cbd5e1}
         .dark-admin .dash-actions a:hover{border-color:#d98c1b;background:rgba(217,140,27,.1);color:#d98c1b}
         .dark-admin .dash-empty{color:#64748b}
-        @media(max-width:768px){.admin-sidebar{transform:translateX(-100%)}.admin-content{margin-left:0}.admin-topbar{height:72px;padding:0 16px}}
+        @media(max-width:768px){.admin-sidebar{transform:translateX(-100%);transition:transform 280ms cubic-bezier(.4,0,.2,1)}.admin-sidebar-open.admin-sidebar{transform:translateX(0)}.admin-content{margin-left:0}.admin-topbar{height:72px;padding:0 16px}.admin-topbar-left{display:flex;align-items:center;gap:12px}.admin-sidebar-toggle{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--color-border);border-radius:50%;background:var(--color-surface);color:var(--color-text-secondary);cursor:pointer;transition:all var(--transition-fast)}.admin-sidebar-toggle:hover{border-color:var(--color-primary);color:var(--color-primary)}.admin-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:calc(var(--z-sticky) - 1);backdrop-filter:blur(2px)}}
+        @media(min-width:769px){.admin-sidebar-toggle,.admin-sidebar-overlay{display:none}}
       `}</style>
     </div>
   );

@@ -206,6 +206,7 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
           border-radius: var(--radius-xl);
           padding: var(--space-6);
           margin: var(--space-6) 0;
+          overflow: hidden;
         }
 
         .ap-playlist-info {
@@ -320,7 +321,8 @@ export default function AudioPlayer({ className, katha }: AudioPlayerProps) {
 
         @media (max-width: 640px) {
           .ap-volume-wrap { display: none; }
-          .ap-controls { gap: var(--space-3); }
+          .ap-controls { gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
+          .ap-playlist-title { max-width: 180px; }
         }
       `}</style>
     </div>

@@ -58,6 +58,24 @@ function visibleKathaQuery(includeUnpublished: boolean): Record<string, unknown>
   return includeUnpublished ? { status: { $ne: 'archived' } } : publicKathaQuery();
 }
 
+/**
+ * Kathas curated as paath/nittnem entries belong to those contexts only and
+ * must not surface in the general library (/audio, /video, search, admin list).
+ * PaathEntry/NittnemEntry are the single source of truth for this.
+ */
+async function getContextExcludedKathaIds(): Promise<mongoose.Types.ObjectId[]> {
+  const [paathKathaIds, nittnemKathaIds] = await Promise.all([
+    PaathEntry.distinct('kathaId'),
+    NittnemEntry.distinct('kathaId'),
+  ]);
+  return [...paathKathaIds, ...nittnemKathaIds] as mongoose.Types.ObjectId[];
+}
+
+async function applyLibraryExclusion(query: Record<string, unknown>): Promise<void> {
+  const excluded = await getContextExcludedKathaIds();
+  if (excluded.length > 0) query._id = { $nin: excluded };
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -121,6 +139,8 @@ export async function getKathas(params: KathaSearchParams = {}) {
     if (!mongoose.Types.ObjectId.isValid(folder)) return emptyResult(safePage, safeLimit);
     query.folderId = new mongoose.Types.ObjectId(folder);
   }
+
+  await applyLibraryExclusion(query);
 
   const sortMap: Record<string, [string, 1 | -1][]> = {
     newest: [['createdAt', -1]],
@@ -215,6 +235,8 @@ async function fetchGroupedKathas({
   }
   if (options.type) query.type = options.type;
 
+  await applyLibraryExclusion(query);
+
   const data = await Katha.find(query)
     .sort(sortMapManual)
     .select(SERIES_LIST_SELECT)
@@ -242,14 +264,17 @@ export async function getFeaturedKathas(type?: 'audio' | 'video', limit = 6) {
     ...publicKathaQuery(),
   };
   if (type) query.type = type;
+  await applyLibraryExclusion(query);
   return Katha.find(query).sort({ createdAt: -1 }).limit(limit).lean();
 }
 
 export async function getRecentKathas(limit = 10) {
   await connectDB();
-  return Katha.find({
+  const query: Record<string, unknown> = {
     ...publicKathaQuery(),
-  })
+  };
+  await applyLibraryExclusion(query);
+  return Katha.find(query)
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate('categoryId', 'name slug')

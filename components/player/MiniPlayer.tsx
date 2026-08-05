@@ -243,6 +243,7 @@ export default function MiniPlayer() {
           height: var(--player-height);
           max-width: var(--max-width);
           margin: 0 auto;
+          overflow: hidden;
         }
 
         .mini-player-info {
@@ -415,19 +416,21 @@ export default function MiniPlayer() {
           .mini-player {
             bottom: var(--mobile-nav-height, 64px);
           }
-          .mini-player-right { display: none; }
-          .mini-player-info { flex: 0 0 140px; }
-          .mini-player-content { padding: 8px 16px; gap: 12px; }
+          .mini-player-right { display: flex; gap: 4px; flex-shrink: 0; }
+          .mini-player-info { flex: 1 1 0; min-width: 0; }
+          .mini-player-content { padding: 8px 12px; gap: 8px; }
+          .mini-player-controls { gap: 4px; flex-shrink: 0; }
         }
 
         @media (max-width: 560px) {
           .mini-player-controls .mp-ctrl:first-child,
           .mini-player-controls .mp-ctrl:last-child { display: none; }
-          .mini-player-info { flex: 0 0 112px; }
+          .mini-player-info { flex: 1 1 0; min-width: 0; }
           .mini-player-thumb { width: 40px; height: 40px; }
-          .mini-player-content { padding: 8px 12px; gap: 8px; }
+          .mini-player-content { padding: 6px 10px; gap: 6px; }
           .mini-player-controls { gap: 2px; }
           .mp-play { width: 40px; height: 40px; }
+          .mini-player-right .mp-ctrl { display: none; }
         }
       `}</style>
     </div>

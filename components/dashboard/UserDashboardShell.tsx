@@ -43,6 +43,7 @@ export default function UserDashboardShell({
     if (typeof window !== 'undefined') return localStorage.getItem('dashboard-theme') === 'dark';
     return false;
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark-dashboard', dark);
@@ -63,7 +64,8 @@ export default function UserDashboardShell({
 
   return (
     <div className="user-app">
-      <aside className="user-sidebar">
+      {sidebarOpen && <div className="user-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`user-sidebar ${sidebarOpen ? 'user-sidebar-open' : ''}`}>
         <Link href="/" className="user-brand">
           <span aria-hidden>☬</span>
           <div><strong>SIKH KATHA</strong><small>DIGITAL LIBRARY</small></div>
@@ -93,9 +95,16 @@ export default function UserDashboardShell({
 
       <div className="user-main">
         <header className="user-topbar">
-          <div>
-            <h1>Welcome back, {userName}</h1>
-            <p>Continue your spiritual journey today.</p>
+          <div className="user-topbar-left">
+            <button className="user-sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            <div>
+              <h1>Welcome back, {userName}</h1>
+              <p>Continue your spiritual journey today.</p>
+            </div>
           </div>
           <div className="user-top-actions">
             <button onClick={toggleDark} aria-label={dark ? 'Light mode' : 'Dark mode'}>
@@ -134,7 +143,9 @@ export default function UserDashboardShell({
         .user-top-actions a,.user-top-actions button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:50%;color:var(--color-text-secondary);background:var(--color-surface);transition:all var(--transition-fast)}
         .user-top-actions a:hover,.user-top-actions button:hover{border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-alpha)}
         .user-top-actions a svg,.user-top-actions button svg{font-size:20px}
-        @media(max-width:900px){.user-main{margin-left:0}}
+        .user-sidebar-toggle,.user-sidebar-overlay{display:none}
+        @media(max-width:900px){.user-main{margin-left:0}.user-topbar-left{display:flex;align-items:center;gap:12px}.user-sidebar-toggle{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--color-border);border-radius:50%;background:var(--color-surface);color:var(--color-text-secondary);cursor:pointer;transition:all var(--transition-fast);flex-shrink:0}.user-sidebar-toggle:hover{border-color:var(--color-primary);color:var(--color-primary)}.user-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399;backdrop-filter:blur(2px)}}
+        @media(max-width:900px) and (min-width:641px){.user-sidebar{transform:translateX(-100%);transition:transform 280ms cubic-bezier(.4,0,.2,1)}.user-sidebar-open.user-sidebar{transform:translateX(0)}}
         @media(max-width:640px){
           .user-sidebar{position:fixed;inset:auto 0 0 0;width:100%;height:72px;padding:7px 8px max(7px,env(safe-area-inset-bottom));border:0;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -10px 30px rgba(8,16,28,.18)}
           .user-brand,.user-account{display:none}
@@ -147,6 +158,8 @@ export default function UserDashboardShell({
           .user-topbar h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
           .user-topbar p{font-size:11px}.user-top-actions{gap:5px}.user-top-actions a,.user-top-actions button{width:36px;height:36px}
           .user-top-actions a:first-child,.user-top-actions a:nth-child(2){display:none}
+          .user-sidebar-toggle{display:none}
+          .user-sidebar-overlay{display:none!important}
         }
         .dark-dashboard .user-app{background:#0b1424}
         .dark-dashboard .user-sidebar{background:linear-gradient(180deg,#0b1424,#070f1c)}

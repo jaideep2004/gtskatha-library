@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Fragment } from 'react';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, getThumbnailUrl } from '@/lib/utils';
 import FileUpload from '@/components/admin/FileUpload';
 import { toast } from 'sonner';
 
@@ -305,7 +305,7 @@ export default function NittnemAdminPage() {
                   <tr className="paath-row" onClick={() => toggleExpand(n)} style={{ cursor: 'pointer' }}>
                     <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span className={`paath-expand ${expandedId === n._id ? 'expanded' : ''}`}>▸</span>
-                      {n.thumbnail && <img src={`/api/media/thumbnails/${n.thumbnail}`} alt="" className="admin-thumb-sm" />}
+                      {n.thumbnail && <img src={getThumbnailUrl(n.thumbnail)} alt="" className="admin-thumb-sm" />}
                       {n.title}
                     </td>
                     <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{n.slug}</code></td>
@@ -352,7 +352,7 @@ export default function NittnemAdminPage() {
                                   <span className="paath-entry-order">{idx + 1}</span>
                                   {entry.kathaId?.thumbnail && (
                                     <div className="paath-entry-thumb">
-                                      <img src={`/api/media/thumbnails/${entry.kathaId.thumbnail}`} alt="" />
+                                      <img src={getThumbnailUrl(entry.kathaId.thumbnail)} alt="" />
                                     </div>
                                   )}
                                   <div className="paath-entry-info">

@@ -224,8 +224,8 @@ export default async function UserDashboardPage() {
         @media(max-width:1200px){.ud-stats{grid-template-columns:repeat(3,1fr)}.ud-secondary-grid{grid-template-columns:1fr 1fr}.ud-secondary-grid>:last-child{grid-column:1/-1}}
         @media(max-width:760px){
           .ud-page{padding:12px 12px 24px}
-          .ud-stats{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:5px;gap:10px}
-          .ud-stat{flex:0 0 72%;min-height:100px;padding:14px 16px;scroll-snap-align:start}.ud-stat-icon{width:44px;height:44px}.ud-stat strong{font-size:24px}
+          .ud-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow:visible}
+          .ud-stat{min-height:100px;padding:14px 16px}.ud-stat-icon{width:44px;height:44px}.ud-stat strong{font-size:24px}
           .ud-primary-grid,.ud-secondary-grid{grid-template-columns:1fr;gap:12px;margin-top:12px}.ud-secondary-grid>:last-child{grid-column:auto}
           .ud-panel{padding:14px}.ud-panel-head h2{font-size:16px}
           .ud-progress-item{grid-template-columns:68px 1fr 34px;gap:10px;padding:8px}
@@ -235,7 +235,7 @@ export default async function UserDashboardPage() {
           .ud-series-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.ud-series-grid a{flex:0 0 40%;scroll-snap-align:start}
           .ud-category-list a{min-height:44px}
         }
-        @media(max-width:390px){.ud-stat{flex-basis:82%}.ud-series-grid a{flex-basis:52%}}
+        @media(max-width:390px){.ud-stat{min-height:auto;padding:12px}.ud-series-grid a{flex-basis:52%}}
       `}</style>
     </main>
   );

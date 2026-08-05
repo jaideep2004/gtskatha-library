@@ -60,7 +60,7 @@ export default async function PaathListPage() {
         .list-page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--space-4); }
         .list-page-card { display: flex; flex-direction: column; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; text-decoration: none; color: inherit; transition: all var(--transition-base); }
         .list-page-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--color-primary-light); }
-        .list-page-card-thumb { height: 140px; background: linear-gradient(135deg, #1e1a10, #2d2510); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .list-page-card-thumb { height: 160px; background: linear-gradient(135deg, #1e1a10, #2d2510); display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .list-page-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .list-page-card-thumb span { font-size: 48px; color: var(--color-primary); }
         .list-page-card-body { padding: var(--space-4); flex: 1; }

@@ -75,10 +75,7 @@ export default function PaathAdminPage() {
   const [kathaError, setKathaError] = useState('');
   const [audioUploading, setAudioUploading] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
-  const [assignTarget, setAssignTarget] = useState<{ paathId: string; title: string; kathaIds: string[]; count: number } | null>(null);
-  const [assignLists, setAssignLists] = useState<Array<{ _id: string; title: string; slug: string; entryCount?: number }>>([]);
-  const [assignListsLoading, setAssignListsLoading] = useState(false);
-  const [assigningTo, setAssigningTo] = useState<string | null>(null);
+  const [copyingSlug, setCopyingSlug] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -247,57 +244,22 @@ export default function PaathAdminPage() {
     } catch { toast.error('Failed to remove entry.'); }
   }
 
-  async function openAssignToNitnem(paath: Paath) {
-    setAssignListsLoading(true);
-    let kathaIds: string[] = [];
+  async function handleCopyToNitnem(paath: Paath) {
+    if (!confirm(`Duplicate "${paath.title}" into a Nitnem list? The list is created automatically if it does not exist.`)) return;
+    setCopyingSlug(paath.slug);
     try {
-      const res = await fetch(`/api/paath/${paath.slug}/entries`);
+      const res = await fetch(`/api/paath/${paath.slug}/copy-to-nitnem`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        kathaIds = (data.data as PaathEntry[])
-          .map((e) => (e.kathaId && typeof e.kathaId === 'object' ? e.kathaId._id : String(e.kathaId)))
-          .filter((id) => !!id);
-      }
-    } catch {
-      // ignore, kathaIds stays empty
-    }
-
-    setAssignTarget({ paathId: paath._id, title: paath.title, kathaIds, count: kathaIds.length });
-
-    try {
-      const listsRes = await fetch('/api/nittnem');
-      const listsData = await listsRes.json();
-      if (listsData.success) setAssignLists(listsData.data);
-    } catch { toast.error('Failed to load Nitnem lists.'); }
-    finally { setAssignListsLoading(false); }
-  }
-
-  async function assignToNitnem(list: { _id: string; title: string; slug: string }) {
-    if (!assignTarget) return;
-    if (assignTarget.kathaIds.length === 0) {
-      toast.info('This Paath has no kathas yet.');
-      return;
-    }
-    setAssigningTo(list._id);
-    try {
-      const res = await fetch(`/api/nittnem/${list.slug}/entries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kathaIds: assignTarget.kathaIds }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        const result = (data.data ?? {}) as { added?: number; skipped?: number };
-        toast.success(`Added ${result.added ?? assignTarget.count} kathas to "${list.title}".`);
-        setAssignTarget(null);
-        const paath = paaths.find((x) => x._id === assignTarget.paathId);
-        if (paath) loadEntries(paath._id, paath.slug);
+        const d = (data.data ?? {}) as { created?: boolean; list?: { title: string }; added?: number; skipped?: number };
+        const createdText = d.created ? ' (new Nitnem list created)' : '';
+        toast.success(`Added ${d.added ?? 0} kathas to Nitnem list "${d.list?.title ?? ''}"${createdText}.`);
         load();
       } else {
-        toast.error(data.error || 'Failed to assign.');
+        toast.error(data.error || 'Failed to copy.');
       }
-    } catch { toast.error('Failed to assign.'); }
-    finally { setAssigningTo(null); }
+    } catch { toast.error('Failed to copy.'); }
+    finally { setCopyingSlug(null); }
   }
 
   return (
@@ -370,8 +332,9 @@ export default function PaathAdminPage() {
                     <td>{p.active ? <span className="badge badge-success">Active</span> : <span className="badge badge-draft">Inactive</span>}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }} onClick={(e) => e.stopPropagation()}>
-                        <button className="btn btn-ghost btn-sm" title={`Add all kathas of "${p.title}" to a Nitnem list`}
-                          onClick={() => void openAssignToNitnem(p)}>→ Nitnem</button>
+                        <button className="btn btn-ghost btn-sm" title="Duplicate this Paath into a Nitnem list (creates the list if needed)"
+                          disabled={copyingSlug !== null}
+                          onClick={() => void handleCopyToNitnem(p)}>{copyingSlug === p.slug ? 'Copying…' : 'Copy to Nitnem'}</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>Edit</button>
                         <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-error)' }} onClick={() => handleDelete(p.slug, p.title)}>Delete</button>
                       </div>
@@ -525,40 +488,6 @@ export default function PaathAdminPage() {
         </div>
       )}
 
-      {assignTarget && (
-        <div className="admin-form-overlay" onClick={() => { if (!assigningTo) setAssignTarget(null); }}>
-          <div className="admin-form-modal assign-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-form-modal-header">
-              <h2 className="admin-form-title">Assign Paath to Nitnem</h2>
-              {!assigningTo && <button type="button" className="admin-form-close" onClick={() => setAssignTarget(null)} aria-label="Close">×</button>}
-            </div>
-            <p className="assign-modal-sub">
-              <strong>{assignTarget.title}</strong> — add all {assignTarget.count} kathas to a Nitnem list.
-            </p>
-            {assignTarget.count === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>
-                This Paath has no kathas yet. Add kathas first.
-              </p>
-            ) : assignListsLoading ? (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>Loading Nitnem lists…</p>
-            ) : assignLists.length === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>No Nitnem lists yet. Create one first.</p>
-            ) : (
-              <div className="assign-list">
-                {assignLists.map((list) => (
-                  <button key={list._id} className="assign-list-item" disabled={assigningTo !== null}
-                    onClick={() => void assignToNitnem(list)}>
-                    <span className="assign-list-name">{list.title}</span>
-                    <span className="assign-list-count">{list.entryCount ?? 0}</span>
-                    <span className="assign-list-arrow" aria-hidden>→</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <style>{`
         .admin-page { padding: var(--space-8); }
         .admin-page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-8); gap: var(--space-4); }
@@ -612,16 +541,6 @@ export default function PaathAdminPage() {
         .form-checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-2) 0; }
         .form-checkbox { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); cursor: pointer; }
         .modal-form-actions { display: flex; gap: var(--space-3); justify-content: flex-end; padding-top: var(--space-2); }
-        .assign-modal { width: min(460px, calc(100vw - var(--space-8))); }
-        .assign-modal-sub { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-4); }
-        .assign-modal-sub strong { color: var(--color-text-primary); }
-        .assign-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 46vh; overflow-y: auto; }
-        .assign-list-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 140ms ease, background 140ms ease; text-align: left; width: 100%; }
-        .assign-list-item:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary-alpha); }
-        .assign-list-item:disabled { opacity: .55; cursor: not-allowed; }
-        .assign-list-name { flex: 1; min-width: 0; font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .assign-list-count { min-width: 26px; height: 22px; display: grid; place-items: center; padding: 0 8px; border-radius: var(--radius-full); background: var(--color-bg-secondary); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
-        .assign-list-arrow { color: var(--color-primary); font-size: 15px; }
       `}</style>
     </div>
   );

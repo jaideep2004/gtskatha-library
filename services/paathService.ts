@@ -1,6 +1,8 @@
 import connectDB from '@/lib/db';
 import Paath from '@/models/Paath';
 import PaathEntry from '@/models/PaathEntry';
+import Nittnem from '@/models/Nittnem';
+import NittnemEntry from '@/models/NittnemEntry';
 import { DomainError } from '@/lib/domainError';
 import mongoose from 'mongoose';
 
@@ -69,6 +71,59 @@ export async function addEntry(paathId: string, kathaId: string, title?: string)
     title: title?.trim() || undefined,
   });
   return entry.toObject();
+}
+
+export async function copyPaathToNitnem(slug: string) {
+  await connectDB();
+  const paath = await Paath.findOne({ slug }).lean();
+  if (!paath) throw new DomainError('Paath not found', 404);
+
+  const entries = await PaathEntry.find({ paathId: paath._id }).sort({ order: 1 }).select('kathaId').lean();
+  const kathaIds = entries
+    .map((e) => String(e.kathaId))
+    .filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (kathaIds.length === 0) throw new DomainError('This Paath has no kathas to copy', 409);
+
+  let list = await Nittnem.findOne({ slug: paath.slug }).lean();
+  const created = !list;
+  if (!list) {
+    const maxSort = await Nittnem.findOne().sort({ sortOrder: -1 }).select('sortOrder').lean();
+    list = (
+      await Nittnem.create({
+        title: paath.title,
+        slug: paath.slug,
+        description: paath.description,
+        thumbnail: paath.thumbnail,
+        sortOrder: (maxSort?.sortOrder ?? -1) + 1,
+      })
+    ).toObject();
+  }
+
+  const existing = await NittnemEntry.find({
+    nittnemId: list._id,
+    kathaId: { $in: kathaIds },
+  }).distinct('kathaId');
+  const existingSet = new Set(existing.map((id) => String(id)));
+  const fresh = kathaIds.filter((id) => !existingSet.has(String(id)));
+
+  if (fresh.length > 0) {
+    const maxOrder = await NittnemEntry.findOne({ nittnemId: list._id }).sort({ order: -1 }).select('order').lean();
+    let order = (maxOrder?.order ?? 0) + 1;
+    await NittnemEntry.insertMany(
+      fresh.map((kathaId) => ({
+        nittnemId: list._id,
+        kathaId: new mongoose.Types.ObjectId(kathaId),
+        order: order++,
+      }))
+    );
+  }
+
+  return {
+    created,
+    list: { _id: list._id, title: list.title, slug: list.slug },
+    added: fresh.length,
+    skipped: existing.length,
+  };
 }
 
 export async function removeEntry(id: string) {

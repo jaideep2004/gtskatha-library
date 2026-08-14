@@ -186,7 +186,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
             {/* About Series */}
             {series && (
               <div className="sidebar-card">
-                <h3 className="sidebar-card-title">ਲੜੀ ਬਾਰੇ</h3>
+                <h3 className="sidebar-card-title">SGGS ਕਥਾ ਬਾਰੇ</h3>
                 <div className="series-sidebar-thumb">
                   {series.thumbnail ? (
                     <img src={getThumbnailUrl(series.thumbnail)} alt={series.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
@@ -197,7 +197,7 @@ export default async function AudioDetailPage({ params }: PageProps) {
                   <p className="series-sidebar-desc">{series.description}</p>
                 )}
                 <Link href={`/series/${series.slug}`} className="btn btn-outline btn-sm" style={{ marginTop: '12px' }}>
-                  ਲੜੀ ਵੇਖੋ
+                  SGGS ਕਥਾ ਵੇਖੋ
                 </Link>
               </div>
             )}

@@ -562,7 +562,7 @@ export default function KathasAdminPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="k-series">Series</label>
+                <label className="form-label" htmlFor="k-series">SGGS Katha</label>
                 <select
                   id="k-series"
                   className="input"
@@ -1177,7 +1177,7 @@ export default function KathasAdminPage() {
                   <th>Title</th>
                   <th>Type</th>
                   <th>Category</th>
-                  <th>Series / Folder</th>
+                  <th>SGGS Katha / Folder</th>
                   <th>Duration</th>
                   <th>Views</th>
                   <th>Status</th>

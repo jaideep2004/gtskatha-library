@@ -11,7 +11,7 @@ import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
   title: 'ਕਥਾ ਖੋਜੋ',
-  description: 'ਸਿੱਖ ਕਥਾ, ਲੜੀਆਂ, ਅਤੇ ਵਿਸ਼ੇ ਖੋਜੋ।',
+  description: 'ਸਿੱਖ ਕਥਾ, SGGS ਕਥਾਵਾਂ, ਅਤੇ ਵਿਸ਼ੇ ਖੋਜੋ।',
 };
 
 interface PageProps {
@@ -83,9 +83,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
         <form className="search-filters" method="get">
           {q && <input type="hidden" name="q" value={q} />}
           <div className="filter-group">
-            <label className="form-label" htmlFor="filter-series">ਲੜੀ</label>
+            <label className="form-label" htmlFor="filter-series">SGGS ਕਥਾ</label>
             <select id="filter-series" name="series" className="input filter-select" defaultValue={seriesSlug}>
-              <option value="">ਸਭ ਲੜੀਆਂ</option>
+              <option value="">ਸਭ SGGS ਕਥਾਵਾਂ</option>
               {seriesList.filter((s) => s.title).map((s) => (
                 <option key={s._id} value={s.slug}>{s.title}</option>
               ))}

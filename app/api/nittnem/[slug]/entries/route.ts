@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEntries, addEntry, reorderEntries } from '@/services/nittnemService';
+import { getEntries, addEntry, addEntries, reorderEntries } from '@/services/nittnemService';
 import { requireAdmin } from '@/lib/apiAuth';
 import { ADMIN_MUTATION_LIMIT, enforceRateLimit } from '@/lib/rateLimit';
+import { DomainError } from '@/lib/domainError';
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -13,7 +14,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { getNittnemBySlug } = await import('@/services/nittnemService');
     const nittnem = await getNittnemBySlug(slug);
     if (!nittnem) {
-      return NextResponse.json({ success: false, error: 'Nittnem list not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Nitnem list not found' }, { status: 404 });
     }
     const entries = await getEntries(String(nittnem._id));
     return NextResponse.json({ success: true, data: entries });
@@ -34,10 +35,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { getNittnemBySlug: getNittnem } = await import('@/services/nittnemService');
     const nittnem = await getNittnem(slug);
     if (!nittnem) {
-      return NextResponse.json({ success: false, error: 'Nittnem list not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Nitnem list not found' }, { status: 404 });
     }
 
-    const { kathaId, title } = await req.json() as { kathaId?: string; title?: string };
+    const { kathaId, kathaIds, title } = await req.json() as { kathaId?: string; kathaIds?: string[]; title?: string };
+    if (Array.isArray(kathaIds)) {
+      const result = await addEntries(String(nittnem._id), kathaIds);
+      return NextResponse.json({ success: true, data: result }, { status: 201 });
+    }
     if (!kathaId) {
       return NextResponse.json({ success: false, error: 'kathaId is required' }, { status: 400 });
     }
@@ -45,6 +50,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     const entry = await addEntry(String(nittnem._id), kathaId, title);
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error('POST /api/nittnem/[slug]/entries', error);
     return NextResponse.json({ success: false, error: 'Failed to add entry' }, { status: 500 });
   }
@@ -61,7 +69,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { getNittnemBySlug: getNittnem } = await import('@/services/nittnemService');
     const nittnem = await getNittnem(slug);
     if (!nittnem) {
-      return NextResponse.json({ success: false, error: 'Nittnem list not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Nitnem list not found' }, { status: 404 });
     }
 
     const { ids } = await req.json() as { ids?: string[] };

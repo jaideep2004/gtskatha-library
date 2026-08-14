@@ -6,8 +6,8 @@ import type { ISeries } from '@/types';
 import { serializeForClient } from '@/lib/serialize';
 
 export const metadata: Metadata = {
-  title: 'ਕਥਾ ਲੜੀਆਂ',
-  description: 'ਸਿੱਖ ਕਥਾ ਅਤੇ ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਦੀਆਂ ਚੁਣੀਆਂ ਹੋਈਆਂ ਲੜੀਆਂ ਵੇਖੋ।',
+  title: 'SGGS ਕਥਾ',
+  description: 'ਸਿੱਖ ਕਥਾ ਅਤੇ ਗੁਰਬਾਣੀ ਵਿਚਾਰ ਦੀਆਂ ਚੁਣੀਆਂ ਹੋਈਆਂ SGGS ਕਥਾਵਾਂ ਵੇਖੋ।',
 };
 
 interface Props {

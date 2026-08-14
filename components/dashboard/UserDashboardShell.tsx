@@ -23,7 +23,7 @@ const navigation = [
   { href: '/audio', label: 'Audio Library', icon: HeadphonesOutlined },
   { href: '/video', label: 'Video Library', icon: VideoLibraryOutlined },
   { href: '/search', label: 'Categories', icon: CategoryOutlined },
-  { href: '/series', label: 'Series', icon: LayersOutlined },
+  { href: '/series', label: 'SGGS Katha', icon: LayersOutlined },
   { href: '/dashboard#continue', label: 'Continue Listening', icon: HistoryOutlined },
   { href: '/dashboard#notifications', label: 'Notifications', icon: NotificationsNoneOutlined },
   { href: '/profile/favorites', label: 'My Library', icon: BookmarkBorderOutlined },

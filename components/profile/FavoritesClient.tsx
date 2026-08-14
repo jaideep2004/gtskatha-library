@@ -9,9 +9,9 @@ type FavTab = 'katha' | 'series' | 'paath' | 'nittnem';
 
 const TABS: { key: FavTab; label: string }[] = [
   { key: 'katha', label: 'Kathas' },
-  { key: 'series', label: 'Series' },
+  { key: 'series', label: 'SGGS Katha' },
   { key: 'paath', label: 'Paath' },
-  { key: 'nittnem', label: 'Nittnem' },
+  { key: 'nittnem', label: 'Nitnem' },
 ];
 
 export default function FavoritesClient() {

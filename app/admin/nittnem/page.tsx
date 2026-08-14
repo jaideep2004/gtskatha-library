@@ -75,6 +75,10 @@ export default function NittnemAdminPage() {
   const [kathaError, setKathaError] = useState('');
   const [audioUploading, setAudioUploading] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<{ entryId: string; kathaId: string; title: string } | null>(null);
+  const [assignLists, setAssignLists] = useState<Array<{ _id: string; title: string; slug: string; entryCount?: number }>>([]);
+  const [assignListsLoading, setAssignListsLoading] = useState(false);
+  const [assigningTo, setAssigningTo] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,7 +137,7 @@ export default function NittnemAdminPage() {
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (data.success) {
-        toast.success(editingSlug ? 'Nittnem list updated.' : 'Nittnem list created.');
+        toast.success(editingSlug ? 'Nitnem list updated.' : 'Nitnem list created.');
         setShowForm(false);
         load();
       } else {
@@ -148,7 +152,7 @@ export default function NittnemAdminPage() {
   }
 
   async function handleDelete(slug: string, title: string) {
-    if (!confirm(`Delete nittnem list "${title}" and all entries?`)) return;
+    if (!confirm(`Delete Nitnem list "${title}" and all entries?`)) return;
     try {
       const res = await fetch(`/api/nittnem/${slug}`, { method: 'DELETE' });
       const data = await res.json();
@@ -243,28 +247,64 @@ export default function NittnemAdminPage() {
     } catch { toast.error('Failed to remove entry.'); }
   }
 
+  async function openAssignToPaath(entry: NittnemEntry) {
+    const katha = entry.kathaId;
+    setAssignTarget({
+      entryId: entry._id,
+      kathaId: typeof katha === 'object' && katha !== null ? katha._id : String(entry.kathaId),
+      title: typeof katha === 'object' && katha !== null ? (katha.title ?? entry.title ?? 'Katha') : (entry.title ?? 'Katha'),
+    });
+    setAssignListsLoading(true);
+    try {
+      const res = await fetch('/api/paath');
+      const data = await res.json();
+      if (data.success) setAssignLists(data.data);
+    } catch { toast.error('Failed to load Paath lists.'); }
+    finally { setAssignListsLoading(false); }
+  }
+
+  async function assignToPaath(list: { _id: string; title: string; slug: string }) {
+    if (!assignTarget) return;
+    setAssigningTo(list._id);
+    try {
+      const res = await fetch(`/api/paath/${list.slug}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kathaId: assignTarget.kathaId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Assigned to "${list.title}".`);
+        setAssignTarget(null);
+      } else {
+        toast.error(data.error || 'Failed to assign.');
+      }
+    } catch { toast.error('Failed to assign.'); }
+    finally { setAssigningTo(null); }
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
         <div>
-          <h1 className="admin-page-title">Nittnem</h1>
-          <p className="admin-page-sub">{lists.length} nittnem lists</p>
+          <h1 className="admin-page-title">Nitnem</h1>
+          <p className="admin-page-sub">{lists.length} Nitnem lists</p>
         </div>
         <button className="btn btn-primary btn-sm" onClick={openNew}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          Add Nittnem List
+          Add Nitnem List
         </button>
       </div>
 
       {showForm && (
         <div className="admin-form-card">
-          <h2 className="admin-form-title">{editingSlug ? 'Edit Nittnem List' : 'New Nittnem List'}</h2>
+          <h2 className="admin-form-title">{editingSlug ? 'Edit Nitnem List' : 'New Nitnem List'}</h2>
           <form className="admin-form-inline" onSubmit={handleSubmit}>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="form-label" htmlFor="n-title">Title *</label>
-              <input id="n-title" type="text" className="input" placeholder="e.g. Morning Nittnem" required
+              <input id="n-title" type="text" className="input" placeholder="e.g. Morning Nitnem" required
                 value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -299,7 +339,7 @@ export default function NittnemAdminPage() {
             </thead>
             <tbody>
               {lists.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No nittnem lists yet.</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No Nitnem lists yet.</td></tr>
               ) : lists.map((n) => (
                 <Fragment key={n._id}>
                   <tr className="paath-row" onClick={() => toggleExpand(n)} style={{ cursor: 'pointer' }}>
@@ -335,9 +375,9 @@ export default function NittnemAdminPage() {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                   <path d="M12 5v14M5 12h14"/>
                                 </svg>
-                                Create Katha
+                                Create Nitnem
                               </button>
-                              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Creates a new katha and adds it as an entry</span>
+                              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Creates a new katha and adds it as a Nitnem entry</span>
                             </div>
                           )}
 
@@ -359,6 +399,8 @@ export default function NittnemAdminPage() {
                                     <strong>{entry.kathaId?.title ?? entry.title ?? 'Unknown'}</strong>
                                     <small>{entry.kathaId?.type?.toUpperCase()} · {entry.kathaId?.duration ? formatDuration(entry.kathaId.duration) : '—'} · {entry.kathaId?.authorName ?? '—'}</small>
                                   </div>
+                                  <button className="btn btn-ghost btn-sm" title="Assign to a Paath"
+                                    onClick={() => void openAssignToPaath(entry)}>→ Paath</button>
                                   <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-error)' }}
                                     onClick={() => removeEntry(entry._id, n._id, n.slug)}>Remove</button>
                                 </div>
@@ -380,7 +422,7 @@ export default function NittnemAdminPage() {
         <div className="admin-form-overlay" onClick={() => { if (!kathaSaving) { setShowKathaForm(false); setKathaForm(emptyKathaForm); } }}>
           <div className="admin-form-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-form-modal-header">
-              <h2 className="admin-form-title">Create New Katha for Entry</h2>
+              <h2 className="admin-form-title">Create New Katha for Nitnem Entry</h2>
               {!kathaSaving && <button type="button" className="admin-form-close" onClick={() => { setShowKathaForm(false); setKathaForm(emptyKathaForm); }} aria-label="Close">×</button>}
             </div>
             <form className="admin-form" onSubmit={handleCreateKatha}>
@@ -457,11 +499,41 @@ export default function NittnemAdminPage() {
               {kathaError && <p style={{ color: 'var(--color-error)', fontSize: 'var(--font-size-sm)' }}>{kathaError}</p>}
               <div className="modal-form-actions">
                 <button type="submit" className="btn btn-primary" disabled={kathaSaving || audioUploading || thumbUploading}>
-                  {kathaSaving ? 'Creating…' : 'Create & Add as Entry'}
+                  {kathaSaving ? 'Creating…' : 'Create & Add to Nitnem'}
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => { setShowKathaForm(false); setKathaForm(emptyKathaForm); }}>Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {assignTarget && (
+        <div className="admin-form-overlay" onClick={() => { if (!assigningTo) setAssignTarget(null); }}>
+          <div className="admin-form-modal assign-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-form-modal-header">
+              <h2 className="admin-form-title">Assign to Paath</h2>
+              {!assigningTo && <button type="button" className="admin-form-close" onClick={() => setAssignTarget(null)} aria-label="Close">×</button>}
+            </div>
+            <p className="assign-modal-sub">
+              <strong>{assignTarget.title}</strong> — choose a Paath to add this katha to.
+            </p>
+            {assignListsLoading ? (
+              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>Loading Paath lists…</p>
+            ) : assignLists.length === 0 ? (
+              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>No Paath categories yet. Create one first.</p>
+            ) : (
+              <div className="assign-list">
+                {assignLists.map((list) => (
+                  <button key={list._id} className="assign-list-item" disabled={assigningTo !== null}
+                    onClick={() => void assignToPaath(list)}>
+                    <span className="assign-list-name">{list.title}</span>
+                    <span className="assign-list-count">{list.entryCount ?? 0}</span>
+                    <span className="assign-list-arrow" aria-hidden>→</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -519,6 +591,16 @@ export default function NittnemAdminPage() {
         .form-checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-2) 0; }
         .form-checkbox { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); cursor: pointer; }
         .modal-form-actions { display: flex; gap: var(--space-3); justify-content: flex-end; padding-top: var(--space-2); }
+        .assign-modal { width: min(460px, calc(100vw - var(--space-8))); }
+        .assign-modal-sub { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-4); }
+        .assign-modal-sub strong { color: var(--color-text-primary); }
+        .assign-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 46vh; overflow-y: auto; }
+        .assign-list-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 140ms ease, background 140ms ease; text-align: left; width: 100%; }
+        .assign-list-item:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary-alpha); }
+        .assign-list-item:disabled { opacity: .55; cursor: not-allowed; }
+        .assign-list-name { flex: 1; min-width: 0; font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .assign-list-count { min-width: 26px; height: 22px; display: grid; place-items: center; padding: 0 8px; border-radius: var(--radius-full); background: var(--color-bg-secondary); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+        .assign-list-arrow { color: var(--color-primary); font-size: 15px; }
       `}</style>
     </div>
   );

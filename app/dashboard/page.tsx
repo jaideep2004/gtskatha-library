@@ -135,7 +135,7 @@ export default async function UserDashboardPage() {
 
       <section className="ud-secondary-grid">
         <div className="ud-panel">
-          <div className="ud-panel-head"><h2>Popular Series</h2><Link href="/series">View all</Link></div>
+          <div className="ud-panel-head"><h2>Popular SGGS Katha</h2><Link href="/series">View all</Link></div>
           <div className="ud-series-grid">
             {popularSeries.map((series) => (
               <Link href={`/series/${series.slug}`} key={String(series._id)}>
@@ -143,7 +143,7 @@ export default async function UserDashboardPage() {
                 <strong>{series.title}</strong>
               </Link>
             ))}
-            {!popularSeries.length && <div className="ud-empty">No series yet.</div>}
+            {!popularSeries.length && <div className="ud-empty">No SGGS Katha yet.</div>}
           </div>
         </div>
 

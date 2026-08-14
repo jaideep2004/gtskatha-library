@@ -21,7 +21,7 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 						<span>›</span>
 						<b>ਲੜੀਆਂ</b>
 					</nav>
-					<h1>ਕਥਾ ਲੜੀਆਂ</h1>
+					<h1>ਸ੍ਰੀ ਗੁਰੂ ਗ੍ਰੰਥ ਸਾਹਿਬ ਜੀ ਕਥਾ</h1>
 					<p>ਗਹਿਰਾਈ ਨਾਲ ਲਗਾਤਾਰ ਸਿੱਖਣ ਲਈ ਸਜਾਈਆਂ ਹੋਈਆਂ ਕਥਾ ਲੜੀਆਂ ਵੇਖੋ।</p>
 					<form>
 						<label>
@@ -41,18 +41,18 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 				<aside>
 					<h2>ਸੰਗ੍ਰਹਿ</h2>
 					<Link className={!q ? "active" : ""} href='/series'>
-						ਸਾਰੀਆਂ ਲੜੀਆਂ <span>{series.length}</span>
+						ਸਾਰੀਆਂ SGGS ਕਥਾਵਾਂ <span>{series.length}</span>
 					</Link>
 					<Link href='/series?sort=featured'>ਖਾਸ ਪਹਿਲਾਂ</Link>
 					<p>
-						ਲੜੀਆਂ ਅਤੇ ਅਧਿਆਇਆਂ ਦੀ ਗਿਣਤੀ ਸਿੱਧੇ ਪ੍ਰਕਾਸ਼ਿਤ ਲਾਇਬ੍ਰੇਰੀ ਸਮੱਗਰੀ ਤੋਂ
+						SGGS ਕਥਾਵਾਂ ਅਤੇ ਅਧਿਆਇਆਂ ਦੀ ਗਿਣਤੀ ਸਿੱਧੇ ਪ੍ਰਕਾਸ਼ਿਤ ਲਾਇਬ੍ਰੇਰੀ ਸਮੱਗਰੀ ਤੋਂ
 						ਆਉਂਦੀ ਹੈ।
 					</p>
 				</aside>
 				<div className='sa-results'>
 					<header>
 						<p>
-							<strong>{series.length}</strong> ਲੜੀਆਂ ਮਿਲੀਆਂ
+							<strong>{series.length}</strong> SGGS ਕਥਾਵਾਂ ਮਿਲੀਆਂ
 						</p>
 					</header>
 					{series.length ? (
@@ -82,7 +82,7 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 										</p>
 										<footer>
 											<span>
-												{item.featured ? "ਖਾਸ ਲੜੀ" : "ਡਿਜੀਟਲ ਸੰਗ੍ਰਹਿ"}
+												{item.featured ? "ਖਾਸ SGGS ਕਥਾ" : "ਡਿਜੀਟਲ ਸੰਗ੍ਰਹਿ"}
 											</span>
 											<b>ਵੇਖੋ ›</b>
 										</footer>
@@ -93,7 +93,7 @@ export default function SeriesArchive({ series, episodeCounts, q }: Props) {
 					) : (
 						<div className='sa-empty'>
 							<span>☬</span>
-							<h2>ਮਿਲਦੀ ਲੜੀ ਨਹੀਂ ਲੱਭੀ</h2>
+							<h2>ਮਿਲਦੀ SGGS ਕਥਾ ਨਹੀਂ ਲੱਭੀ</h2>
 							<Link href='/series'>ਖੋਜ ਹਟਾਓ</Link>
 						</div>
 					)}

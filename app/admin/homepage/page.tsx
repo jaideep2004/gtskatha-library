@@ -159,13 +159,13 @@ export default function HomepageAdminPage() {
               <span className="settings-hint">Shown in the dark &quot;Featured Katha&quot; banner</span>
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="feat-series">Featured Series Slug</label>
+              <label className="form-label" htmlFor="feat-series">Featured SGGS Katha Slug</label>
               <select id="feat-series" className="input"
                 value={form.featuredSeriesSlug} onChange={(e) => setForm(f => ({ ...f, featuredSeriesSlug: e.target.value }))}>
-                <option value="">No featured series</option>
+                <option value="">No featured SGGS Katha</option>
                 {series.map((item) => <option key={item._id} value={item.slug}>{item.title}</option>)}
               </select>
-              <span className="settings-hint">Highlighted in Popular Series section</span>
+              <span className="settings-hint">Highlighted in Popular SGGS Katha section</span>
             </div>
           </div>
         </div>

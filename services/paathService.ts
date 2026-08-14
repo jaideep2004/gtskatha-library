@@ -55,6 +55,11 @@ export async function addEntry(paathId: string, kathaId: string, title?: string)
   await connectDB();
   if (!mongoose.Types.ObjectId.isValid(paathId)) throw new DomainError('Invalid paath id', 400);
   if (!mongoose.Types.ObjectId.isValid(kathaId)) throw new DomainError('Invalid katha id', 400);
+  const existing = await PaathEntry.exists({
+    paathId: new mongoose.Types.ObjectId(paathId),
+    kathaId: new mongoose.Types.ObjectId(kathaId),
+  });
+  if (existing) throw new DomainError('This katha is already in the paath', 409);
   const maxOrder = await PaathEntry.findOne({ paathId }).sort({ order: -1 }).select('order').lean();
   const order = (maxOrder?.order ?? 0) + 1;
   const entry = await PaathEntry.create({

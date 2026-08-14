@@ -62,7 +62,7 @@ export default async function AdminDashboardPage() {
     ['Video Kathas', videoKathas, 'violet', '/images/video2icon.png'],
     ['Audio Kathas', audioKathas, 'green', '/images/video3icon.png'],
     ['Categories', categoryCount, 'gold', '/images/video4icon.png'],
-    ['Series', seriesCount, 'blue', '/images/video5icon.png'],
+    ['SGGS Katha', seriesCount, 'blue', '/images/video5icon.png'],
     ['Total Users', userCount, 'red', '/images/video6icon.png'],
   ];
 
@@ -134,9 +134,9 @@ export default async function AdminDashboardPage() {
           {!categories.length && <div className="dash-empty">No categories.</div>}
         </div>
         <div className="dash-panel">
-          <div className="dash-panel-head"><h2>Top Series</h2><Link href="/admin/series">Manage</Link></div>
+          <div className="dash-panel-head"><h2>Top SGGS Katha</h2><Link href="/admin/series">Manage</Link></div>
           {series.map((item) => <Link className="dash-simple-row" href="/admin/series" key={String(item._id)}><strong>{item.title}</strong><span>{item.featured ? 'Featured' : 'Standard'}</span></Link>)}
-          {!series.length && <div className="dash-empty">No series.</div>}
+          {!series.length && <div className="dash-empty">No SGGS Katha.</div>}
         </div>
         <div className="dash-panel">
           <div className="dash-panel-head"><h2>Recent Users</h2><span>{userCount} total</span></div>
@@ -158,7 +158,7 @@ export default async function AdminDashboardPage() {
 
       <section className="dash-panel dash-actions">
         <div className="dash-panel-head"><h2>Quick Actions</h2></div>
-        <div><Link href="/admin/kathas">Add Katha</Link><Link href="/admin/categories">Create Category</Link><Link href="/admin/series">Create Series</Link><Link href="/admin/notifications">Send Notification</Link><Link href="/admin/homepage">Edit Homepage</Link></div>
+        <div><Link href="/admin/kathas">Add Katha</Link><Link href="/admin/categories">Create Category</Link><Link href="/admin/series">Create SGGS Katha</Link><Link href="/admin/notifications">Send Notification</Link><Link href="/admin/homepage">Edit Homepage</Link></div>
       </section>
 
       <style>{`

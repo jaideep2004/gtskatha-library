@@ -79,7 +79,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
         <nav className="breadcrumb" aria-label="Breadcrumb">
           <Link href="/">ਮੁੱਖ ਪੰਨਾ</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link href="/series">ਲੜੀਆਂ</Link>
+          <Link href="/series">SGGS ਕਥਾ</Link>
           <span className="breadcrumb-sep">›</span>
           <span>{series!.title}</span>
         </nav>
@@ -97,7 +97,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
 
           <div className="series-detail-info">
             <div className="series-detail-badges">
-              <span className="badge badge-primary">ਲੜੀ</span>
+              <span className="badge badge-primary">SGGS ਕਥਾ</span>
               {series!.featured && (
                 <span className="badge badge-success">ਖਾਸ</span>
               )}
@@ -144,7 +144,7 @@ export default async function SeriesDetailPage({ params }: PageProps) {
             <div className="empty-state">
               <div className="empty-state-icon">🎵</div>
               <h3>ਹਾਲੇ ਕੋਈ ਅਧਿਆਇ ਨਹੀਂ</h3>
-              <p>ਇਸ ਲੜੀ ਵਿੱਚ ਜੋੜੇ ਜਾਣ ਤੋਂ ਬਾਅਦ ਅਧਿਆਇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</p>
+              <p>ਇਸ SGGS ਕਥਾ ਵਿੱਚ ਜੋੜੇ ਜਾਣ ਤੋਂ ਬਾਅਦ ਅਧਿਆਇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</p>
             </div>
           )}
         </div>

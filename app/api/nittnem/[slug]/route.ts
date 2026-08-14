@@ -12,12 +12,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { slug } = await params;
     const nittnem = await getNittnemBySlug(slug);
     if (!nittnem) {
-      return NextResponse.json({ success: false, error: 'Nittnem list not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Nitnem list not found' }, { status: 404 });
     }
     return NextResponse.json({ success: true, data: nittnem });
   } catch (error) {
     console.error('GET /api/nittnem/[slug]', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch nittnem list' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to fetch Nitnem list' }, { status: 500 });
   }
 }
 
@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('PUT /api/nittnem/[slug]', error);
-    return NextResponse.json({ success: false, error: 'Failed to update nittnem list' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to update Nitnem list' }, { status: 500 });
   }
 }
 
@@ -47,9 +47,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     const { slug } = await params;
     await deleteNittnem(slug);
-    return NextResponse.json({ success: true, message: 'Nittnem list deleted' });
+    return NextResponse.json({ success: true, message: 'Nitnem list deleted' });
   } catch (error) {
     console.error('DELETE /api/nittnem/[slug]', error);
-    return NextResponse.json({ success: false, error: 'Failed to delete nittnem list' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to delete Nitnem list' }, { status: 500 });
   }
 }

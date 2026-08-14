@@ -59,7 +59,7 @@ export default async function FolderDetailPage({ params, searchParams }: PagePro
         <nav className="breadcrumb" aria-label="Breadcrumb">
           <Link href="/">ਮੁੱਖ ਪੰਨਾ</Link>
           <span className="breadcrumb-sep">›</span>
-          <Link href="/series">ਲੜੀਆਂ</Link>
+          <Link href="/series">SGGS ਕਥਾ</Link>
           <span className="breadcrumb-sep">›</span>
           <Link href={`/series/${slug}`}>{series.title}</Link>
           <span className="breadcrumb-sep">›</span>

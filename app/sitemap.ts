@@ -2,12 +2,15 @@ import type { MetadataRoute } from 'next';
 import connectDB from '@/lib/db';
 import Katha from '@/models/Katha';
 import Series from '@/models/Series';
+import Paath from '@/models/Paath';
+import Nittnem from '@/models/Nittnem';
+import { SITE_URL } from '@/lib/siteConfig';
 
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const staticRoutes = ['', '/audio', '/video', '/series', '/topics', '/search', '/terms', '/privacy', '/disclaimer'].map((path) => ({
+  const baseUrl = SITE_URL;
+  const staticRoutes = ['', '/audio', '/video', '/series', '/paath', '/nittnem', '/topics', '/search', '/terms', '/privacy', '/disclaimer'].map((path) => ({
     url: `${baseUrl}${path}`,
     lastModified: new Date(),
     changeFrequency: path ? 'daily' as const : 'hourly' as const,
@@ -16,12 +19,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     await connectDB();
-    const [kathas, series] = await Promise.all([
+    const [kathas, series, paaths, nittnems] = await Promise.all([
       Katha.find({
         status: { $ne: 'archived' },
         $or: [{ status: 'published' }, { status: { $exists: false }, published: true }],
       }).select('slug type updatedAt createdAt').lean(),
       Series.find({ archived: { $ne: true } }).select('slug').lean(),
+      Paath.find({ active: true }).select('slug updatedAt').lean(),
+      Nittnem.find({ active: true }).select('slug updatedAt').lean(),
     ]);
 
     return [
@@ -34,6 +39,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
       ...series.map((item) => ({
         url: `${baseUrl}/series/${item.slug}`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })),
+      ...paaths.map((item) => ({
+        url: `${baseUrl}/paath/${item.slug}`,
+        lastModified: item.updatedAt,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })),
+      ...nittnems.map((item) => ({
+        url: `${baseUrl}/nittnem/${item.slug}`,
+        lastModified: item.updatedAt,
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       })),

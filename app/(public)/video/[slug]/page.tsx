@@ -181,7 +181,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 						{relatedVideos.length > 0 && (
 							<div className='sidebar-card'>
 								<h3 className='sidebar-card-title'>
-									{series ? "ਇਸ ਲੜੀ ਵਿੱਚ ਹੋਰ" : "ਸਿੱਖਿਆ ਜਾਰੀ ਰੱਖੋ"}
+									{series ? "ਇਸ SGGS ਕਥਾ ਵਿੱਚ ਹੋਰ" : "ਸਿੱਖਿਆ ਜਾਰੀ ਰੱਖੋ"}
 								</h3>
 								<ul className='related-list'>
 									{relatedVideos.map((r) => (
@@ -240,7 +240,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 						{/* About Series */}
 						{series && (
 							<div className='sidebar-card'>
-								<h3 className='sidebar-card-title'>ਲੜੀ ਬਾਰੇ</h3>
+								<h3 className='sidebar-card-title'>SGGS ਕਥਾ ਬਾਰੇ</h3>
 								<div className='series-sidebar-thumb'>
 									{series.thumbnail ? (
 										<img
@@ -268,7 +268,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
 									href={`/series/${series.slug}`}
 									className='btn btn-outline btn-sm'
 									style={{ marginTop: "var(--space-4)" }}>
-									ਲੜੀ ਵੇਖੋ
+									SGGS ਕਥਾ ਵੇਖੋ
 								</Link>
 							</div>
 						)}

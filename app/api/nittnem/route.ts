@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: nittnems });
   } catch (error) {
     console.error('GET /api/nittnem', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch nittnem lists' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to fetch Nitnem lists' }, { status: 500 });
   }
 }
 
@@ -30,6 +30,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: nittnem }, { status: 201 });
   } catch (error) {
     console.error('POST /api/nittnem', error);
-    return NextResponse.json({ success: false, error: 'Failed to create nittnem list' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to create Nitnem list' }, { status: 500 });
   }
 }

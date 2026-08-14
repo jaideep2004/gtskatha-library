@@ -1,4 +1,5 @@
 import connectDB from '@/lib/db';
+import mongoose from 'mongoose';
 import Favorite from '@/models/Favorite';
 import Katha from '@/models/Katha';
 import Series from '@/models/Series';
@@ -22,20 +23,53 @@ export async function getUserFavorites(userId: string, itemType?: string) {
   await connectDB();
   const filter: Record<string, unknown> = { userId };
   if (itemType) filter.itemType = asItemType(itemType);
-  const favorites = await Favorite.find(filter)
-    .sort({ createdAt: -1 })
-    .populate({
-      path: 'kathaId',
-      match: publicKathaMatch,
-      populate: [
-        { path: 'categoryId', select: 'name slug' },
-        { path: 'seriesId', select: 'title slug' },
-      ],
-    })
-    .lean();
-  return itemType === 'katha' || !itemType
-    ? favorites.filter((favorite) => favorite.kathaId)
-    : favorites;
+  const favorites = await Favorite.find(filter).sort({ createdAt: -1 }).lean();
+
+  const idsByType = new Map<string, mongoose.Types.ObjectId[]>();
+  for (const fav of favorites) {
+    const list = idsByType.get(fav.itemType) ?? [];
+    list.push(fav.kathaId);
+    idsByType.set(fav.itemType, list);
+  }
+
+  const resolved = new Map<string, Record<string, unknown>>();
+  for (const [type, ids] of idsByType) {
+    if (type === 'katha') {
+      const docs = await Katha.find({ _id: { $in: ids }, ...publicKathaMatch })
+        .populate('categoryId', 'name slug')
+        .populate('seriesId', 'title slug')
+        .lean();
+      for (const doc of docs) {
+        resolved.set(String(doc._id), doc as unknown as Record<string, unknown>);
+      }
+    } else if (type === 'series') {
+      const docs = await Series.find({ _id: { $in: ids }, archived: { $ne: true } })
+        .select('title slug thumbnail')
+        .lean();
+      for (const doc of docs) {
+        resolved.set(String(doc._id), { _id: doc._id, title: doc.title, slug: doc.slug });
+      }
+    } else if (type === 'paath') {
+      const docs = await Paath.find({ _id: { $in: ids }, active: true })
+        .select('title slug thumbnail')
+        .lean();
+      for (const doc of docs) {
+        resolved.set(String(doc._id), { _id: doc._id, title: doc.title, slug: doc.slug });
+      }
+    } else {
+      const docs = await Nittnem.find({ _id: { $in: ids }, active: true })
+        .select('title slug thumbnail')
+        .lean();
+      for (const doc of docs) {
+        resolved.set(String(doc._id), { _id: doc._id, title: doc.title, slug: doc.slug });
+      }
+    }
+  }
+
+  return favorites.map((favorite) => ({
+    ...favorite,
+    kathaId: resolved.get(String(favorite.kathaId)) ?? null,
+  }));
 }
 
 function asItemType(t: string): 'katha' | 'series' | 'paath' | 'nittnem' {

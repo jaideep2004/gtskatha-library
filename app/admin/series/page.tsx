@@ -66,6 +66,7 @@ export default function SeriesAdminPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch on mount
   useEffect(() => { void load(); }, [load]);
 
   const loadFolders = useCallback(async (seriesId: string) => {
@@ -180,22 +181,22 @@ export default function SeriesAdminPage() {
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (data.success) {
-        toast.success(editingSlug ? 'Series updated.' : 'Series created.');
+        toast.success(editingSlug ? 'SGGS Katha updated.' : 'SGGS Katha created.');
         setShowForm(false);
         load();
       } else {
         setError(data.error ?? 'Failed to save');
-        toast.error(data.error ?? 'Failed to save series.');
+        toast.error(data.error ?? 'Failed to save SGGS Katha.');
       }
     } catch {
       setError('Network error');
-      toast.error('Network error while saving series.');
+      toast.error('Network error while saving SGGS Katha.');
     }
     finally { setSaving(false); }
   }
 
   async function handleDelete(slug: string, title: string) {
-    if (!confirm(`Delete series "${title}"?`)) return;
+    if (!confirm(`Delete SGGS Katha "${title}"?`)) return;
     try {
       const res = await fetch(`/api/series/${slug}`, { method: 'DELETE' });
       const data = await res.json();
@@ -210,31 +211,31 @@ export default function SeriesAdminPage() {
     <div className="admin-page">
       <div className="admin-page-header">
         <div>
-          <h1 className="admin-page-title">Series</h1>
-          <p className="admin-page-sub">{series.length} series</p>
+          <h1 className="admin-page-title">SGGS Katha</h1>
+          <p className="admin-page-sub">{series.length} SGGS Katha series</p>
         </div>
         <button className="btn btn-primary btn-sm" onClick={openNew}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          Add Series
+          Add SGGS Katha
         </button>
       </div>
 
       {showForm && (
         <div className="admin-form-card">
-          <h2 className="admin-form-title">{editingSlug ? 'Edit Series' : 'Add Series'}</h2>
+          <h2 className="admin-form-title">{editingSlug ? 'Edit SGGS Katha' : 'Add SGGS Katha'}</h2>
           <form style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 'var(--space-4)' }} onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="s-title">Title *</label>
-              <input id="s-title" type="text" className="input" placeholder="Series title" required
+              <input id="s-title" type="text" className="input" placeholder="SGGS Katha title" required
                 value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div className="form-group" style={{ gridColumn: '1/-1' }}>
               <FileUpload
                 key={`series-${editingSlug ?? 'new'}-${form.thumbnail}`}
                 folder="series"
-                label="Series Thumbnail"
+                label="SGGS Katha Thumbnail"
                 accept="image/*"
                 hint="JPG, PNG, WebP — max 20 MB"
                 currentFile={form.thumbnail}
@@ -261,7 +262,7 @@ export default function SeriesAdminPage() {
             {error && <p style={{ gridColumn: '1/-1', color: 'var(--color-error)', fontSize: 'var(--font-size-sm)' }}>{error}</p>}
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 'var(--space-3)' }}>
               <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-                {saving ? 'Saving…' : 'Save Series'}
+                {saving ? 'Saving…' : 'Save SGGS Katha'}
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
@@ -276,7 +277,7 @@ export default function SeriesAdminPage() {
             <button className="btn btn-ghost btn-sm" onClick={() => setFolderSeriesId(null)}>Close</button>
           </div>
           <p className="admin-page-sub" style={{ marginBottom: 'var(--space-4)' }}>
-            {series.find((s) => s._id === folderSeriesId)?.title ?? 'Unknown series'}
+            {series.find((s) => s._id === folderSeriesId)?.title ?? 'Unknown SGGS Katha'}
           </p>
 
           {foldersLoading ? (

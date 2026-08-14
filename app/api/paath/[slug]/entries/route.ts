@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getEntries, addEntry, reorderEntries } from '@/services/paathService';
 import { requireAdmin } from '@/lib/apiAuth';
 import { ADMIN_MUTATION_LIMIT, enforceRateLimit } from '@/lib/rateLimit';
+import { DomainError } from '@/lib/domainError';
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     const entry = await addEntry(String(paath._id), kathaId, title);
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error('POST /api/paath/[slug]/entries', error);
     return NextResponse.json({ success: false, error: 'Failed to add entry' }, { status: 500 });
   }

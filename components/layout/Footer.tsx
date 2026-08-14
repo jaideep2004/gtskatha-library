@@ -3,7 +3,7 @@ import Link from 'next/link';
 const exploreLinks = [
   ['/audio', 'ਆਡੀਓ ਕਥਾ'],
   ['/video', 'ਵੀਡੀਓ ਕਥਾ'],
-  ['/series', 'ਲੜੀਆਂ'],
+  ['/series', 'SGGS ਕਥਾ'],
   ['/paath', 'ਪਾਠ'],
   ['/nittnem', 'ਨਿਤਨੇਮ'],
 ];
@@ -56,11 +56,14 @@ export default function Footer() {
               <Link href="/disclaimer">Disclaimer</Link>
             </nav>
           </div>
-          <a href="https://gtstrust.in" target="_blank" rel="noopener noreferrer" className="footer-trust">
+          <a href="https://gtstrust.in" target="_blank" rel="noopener noreferrer" className="footer-trust" aria-label="GTS Trust — visit our website">
+            <span className="footer-trust-ring" aria-hidden />
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <span>GTS Trust</span>
+            <span className="footer-trust-name">GTS Trust</span>
+            <span className="footer-trust-dot" aria-hidden>·</span>
+            <span className="footer-trust-visit">Visit our website</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="footer-ext-link" aria-hidden>
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
             </svg>
@@ -77,18 +80,25 @@ export default function Footer() {
         .footer-principle{display:flex;align-items:center;gap:12px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1);max-width:380px}.footer-principle>span{font-family:var(--font-gurmukhi);font-size:25px;color:#e39a22}.footer-principle p{font-size:12px;color:rgba(255,255,255,.7)}
         .footer-group{display:flex;flex-direction:column;align-items:flex-start;gap:11px}.footer-group h2{font-family:var(--font-body);font-size:13px;color:#fff;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}.footer-group a{font-size:13px;color:rgba(255,255,255,.58);transition:color .15s ease,transform .15s ease}.footer-group a:hover{color:#f1ae45;transform:translateX(3px)}
         .footer-invite{padding:24px;border:1px solid rgba(255,255,255,.11);border-radius:8px;background:rgba(255,255,255,.035)}.footer-invite>p{font-size:9px;letter-spacing:1.7px;color:#e39a22}.footer-invite h2{font-size:25px;line-height:1.25;color:#fff;margin:10px 0 24px}.footer-invite a{min-height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;border-radius:6px;background:#d98c29;color:#fff;font-size:13px;font-weight:700}
-        .footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:23px;border-top:1px solid rgba(255,255,255,.1);gap:16px;flex-wrap:wrap}
-        .footer-bottom-links{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+        .footer-bottom{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding-top:26px;border-top:1px solid rgba(255,255,255,.1);flex-wrap:wrap}
+        .footer-bottom-links{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-self:start}
         .footer-bottom-links p{font-size:11px;color:rgba(255,255,255,.42)}
         .footer-bottom-links nav{display:flex;gap:22px}
         .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.52)}
         .footer-bottom-links a:hover{color:#f1ae45}
-        .footer-trust{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(217,140,41,.1);color:rgba(255,255,255,.72);font-size:12px;font-weight:600;text-decoration:none;transition:all .2s ease}
-        .footer-trust:hover{border-color:#d98c29;color:#f1ae45;background:rgba(217,140,41,.18)}
-        .footer-ext-link{opacity:.5;transition:opacity .2s ease}
-        .footer-trust:hover .footer-ext-link{opacity:1}
+        .footer-trust{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;border:1px solid rgba(217,140,41,.4);background:linear-gradient(180deg,rgba(217,140,41,.16),rgba(217,140,41,.07));color:rgba(255,255,255,.85);font-size:12px;font-weight:600;text-decoration:none;justify-self:center;overflow:visible;transition:transform .25s cubic-bezier(.34,1.56,.64,1),border-color .25s ease,box-shadow .25s ease,color .25s ease;animation:footerTrustFloat 3.2s ease-in-out infinite;z-index:1}
+        .footer-trust:hover{color:#ffe9c4;border-color:#d98c29;transform:translateY(-2px);box-shadow:0 10px 30px rgba(217,140,41,.35),inset 0 0 0 1px rgba(217,140,41,.35);animation-play-state:paused}
+        .footer-trust-ring{position:absolute;inset:-4px;border-radius:999px;background:radial-gradient(circle,rgba(217,140,41,.28),transparent 70%);animation:footerTrustPulse 2.6s ease-out infinite;pointer-events:none}
+        .footer-trust-name{letter-spacing:.3px}
+        .footer-trust-dot{opacity:.55;font-weight:700}
+        .footer-trust-visit{font-weight:500;color:rgba(241,174,69,.9)}
+        .footer-ext-link{opacity:.65;transition:opacity .2s ease,transform .2s ease}
+        .footer-trust:hover .footer-ext-link{opacity:1;transform:translate(1px,-1px)}
+        @keyframes footerTrustFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+        @keyframes footerTrustPulse{0%{opacity:.9;transform:scale(.92)}70%{opacity:0;transform:scale(1.35)}100%{opacity:0;transform:scale(1.35)}}
+        @media(prefers-reduced-motion:reduce){.footer-trust,.footer-trust-ring{animation:none}}
         @media(max-width:1000px){.footer-main{grid-template-columns:1.4fr 1fr 1fr}.footer-invite{grid-column:1/-1}.footer-invite h2{max-width:420px}}
-        @media(max-width:650px){.site-footer{margin-top:48px;padding-top:48px}.footer-main{grid-template-columns:1fr 1fr;gap:34px 24px}.footer-intro,.footer-invite{grid-column:1/-1}.footer-bottom{flex-direction:column;align-items:flex-start;gap:14px}.footer-bottom-links{flex-direction:column;align-items:flex-start;gap:14px}.footer-bottom-links nav{gap:16px;flex-wrap:wrap}}
+        @media(max-width:650px){.site-footer{margin-top:48px;padding-top:48px}.footer-main{grid-template-columns:1fr 1fr;gap:34px 24px}.footer-intro,.footer-invite{grid-column:1/-1}.footer-bottom{grid-template-columns:1fr;gap:18px}.footer-bottom-links{flex-direction:column;align-items:flex-start;gap:14px}.footer-bottom-links nav{gap:16px;flex-wrap:wrap}.footer-trust{justify-self:center}}
       `}</style>
     </footer>
   );

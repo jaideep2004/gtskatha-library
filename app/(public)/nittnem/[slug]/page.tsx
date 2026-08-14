@@ -17,7 +17,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const nittnem = await getNittnemBySlug(slug);
-  if (!nittnem) return { title: 'Nittnem Not Found' };
+  if (!nittnem) return { title: 'Nitnem Not Found' };
   return {
     title: nittnem.title,
     description: nittnem.description,

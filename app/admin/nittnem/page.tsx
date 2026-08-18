@@ -79,6 +79,9 @@ export default function NittnemAdminPage() {
   const [assignLists, setAssignLists] = useState<Array<{ _id: string; title: string; slug: string; entryCount?: number }>>([]);
   const [assignListsLoading, setAssignListsLoading] = useState(false);
   const [assigningTo, setAssigningTo] = useState<string | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderIds, setReorderIds] = useState<string[]>([]);
+  const [reorderSaving, setReorderSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,6 +107,7 @@ export default function NittnemAdminPage() {
   }
 
   function toggleExpand(list: Nittnem) {
+    if (reorderMode) return;
     if (expandedId === list._id) {
       setExpandedId(null);
     } else {
@@ -290,12 +294,23 @@ export default function NittnemAdminPage() {
           <h1 className="admin-page-title">Nitnem</h1>
           <p className="admin-page-sub">{lists.length} Nitnem lists</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openNew}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add Nitnem List
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <button
+            className={`btn btn-sm ${reorderMode ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              if (!reorderMode) setReorderIds(lists.map((n) => n._id));
+              setReorderMode(!reorderMode);
+            }}
+          >
+            {reorderMode ? 'Done Reordering' : 'Reorder'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={openNew}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add Nitnem List
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -332,15 +347,106 @@ export default function NittnemAdminPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 'var(--space-12)', color: 'var(--color-text-muted)' }}>Loading…</div>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr><th>Name</th><th>Slug</th><th>Entries</th><th>Status</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-              {lists.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No Nitnem lists yet.</td></tr>
-              ) : lists.map((n) => (
+        <>
+          {reorderMode && (
+            <div className="reorder-bar">
+              <span>Drag rows to reorder. {reorderIds.length} items.</span>
+              <div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={reorderSaving}
+                  onClick={async () => {
+                    setReorderSaving(true);
+                    try {
+                      const res = await fetch('/api/nittnem/reorder', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: reorderIds }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        toast.success('Order saved.');
+                        setReorderMode(false);
+                        load();
+                      } else {
+                        toast.error(data.error ?? 'Reorder failed.');
+                      }
+                    } catch {
+                      toast.error('Reorder failed.');
+                    } finally {
+                      setReorderSaving(false);
+                    }
+                  }}
+                >
+                  {reorderSaving ? 'Saving…' : 'Save Order'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setReorderMode(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  {reorderMode && <th style={{ width: 32 }}></th>}
+                  {reorderMode && <th style={{ width: 32 }}>#</th>}
+                  <th>Name</th><th>Slug</th><th>Entries</th><th>Status</th>
+                  {!reorderMode && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {lists.length === 0 ? (
+                  <tr><td colSpan={reorderMode ? 6 : 5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No Nitnem lists yet.</td></tr>
+                ) : reorderMode ? reorderIds
+                  .map((id) => lists.find((n) => n._id === id))
+                  .filter(Boolean)
+                  .map((n, idx) => (
+                  <tr
+                    key={n!._id}
+                    className="reorder-row"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', n!._id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      (e.currentTarget as HTMLElement).classList.add('dragging');
+                    }}
+                    onDragEnd={(e) => {
+                      (e.currentTarget as HTMLElement).classList.remove('dragging');
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData('text/plain');
+                      if (!fromId || fromId === n!._id) return;
+                      setReorderIds((prev) => {
+                        const fromIdx = prev.indexOf(fromId);
+                        const toIdx = prev.indexOf(n!._id);
+                        if (fromIdx === -1 || toIdx === -1) return prev;
+                        const next = [...prev];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        return next;
+                      });
+                    }}
+                  >
+                    <td className="reorder-handle-cell">
+                      <span className="reorder-handle">⠿</span>
+                    </td>
+                    <td className="order-index">{idx + 1}</td>
+                    <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {n!.thumbnail && <img src={getThumbnailUrl(n!.thumbnail)} alt="" className="admin-thumb-sm" />}
+                      {n!.title}
+                    </td>
+                    <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{n!.slug}</code></td>
+                    <td><span className="count-pill count-total">{n!.entryCount ?? 0}</span></td>
+                    <td>{n!.active ? <span className="badge badge-success">Active</span> : <span className="badge badge-draft">Inactive</span>}</td>
+                  </tr>
+                  )) : lists.map((n) => (
                 <Fragment key={n._id}>
                   <tr className="paath-row" onClick={() => toggleExpand(n)} style={{ cursor: 'pointer' }}>
                     <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -412,10 +518,11 @@ export default function NittnemAdminPage() {
                     </tr>
                   )}
                 </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {showKathaForm && (
@@ -601,6 +708,22 @@ export default function NittnemAdminPage() {
         .assign-list-name { flex: 1; min-width: 0; font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .assign-list-count { min-width: 26px; height: 22px; display: grid; place-items: center; padding: 0 8px; border-radius: var(--radius-full); background: var(--color-bg-secondary); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
         .assign-list-arrow { color: var(--color-primary); font-size: 15px; }
+        .reorder-row { cursor: grab; }
+        .reorder-row.dragging { opacity: 0.3; }
+        .reorder-row:hover { background: var(--color-primary-alpha) !important; }
+        .reorder-handle-cell { cursor: grab; text-align: center; }
+        .reorder-handle { font-size: 18px; color: var(--color-text-muted); user-select: none; line-height: 1; }
+        .order-index { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+        .reorder-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: var(--space-3) var(--space-5);
+          background: var(--color-primary-alpha);
+          border: 1px solid var(--color-primary-light);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-4);
+          font-size: var(--font-size-sm); color: var(--color-primary-dark);
+        }
+        .reorder-bar > div { display: flex; gap: var(--space-3); }
       `}</style>
     </div>
   );

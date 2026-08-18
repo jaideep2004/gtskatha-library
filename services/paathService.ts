@@ -73,6 +73,22 @@ export async function addEntry(paathId: string, kathaId: string, title?: string)
   return entry.toObject();
 }
 
+export async function reorderPaaths(ids: string[]) {
+  await connectDB();
+  const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (validIds.length !== ids.length) throw new DomainError('Invalid paath id in reorder request', 400);
+
+  const ops = validIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: new mongoose.Types.ObjectId(id) },
+      update: { $set: { sortOrder: index } },
+    },
+  }));
+
+  await Paath.bulkWrite(ops);
+  return { reordered: validIds.length };
+}
+
 export async function copyPaathToNitnem(slug: string) {
   await connectDB();
   const paath = await Paath.findOne({ slug }).lean();

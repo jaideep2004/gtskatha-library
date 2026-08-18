@@ -98,6 +98,22 @@ export async function addEntries(nittnemId: string, kathaIds: string[]) {
   return { added: fresh.length, skipped: existing.length };
 }
 
+export async function reorderNittnems(ids: string[]) {
+  await connectDB();
+  const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (validIds.length !== ids.length) throw new DomainError('Invalid nittnem id in reorder request', 400);
+
+  const ops = validIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: new mongoose.Types.ObjectId(id) },
+      update: { $set: { sortOrder: index } },
+    },
+  }));
+
+  await Nittnem.bulkWrite(ops);
+  return { reordered: validIds.length };
+}
+
 export async function removeEntry(id: string) {
   await connectDB();
   if (!mongoose.Types.ObjectId.isValid(id)) throw new DomainError('Invalid entry id', 400);

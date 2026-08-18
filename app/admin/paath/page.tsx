@@ -76,6 +76,9 @@ export default function PaathAdminPage() {
   const [audioUploading, setAudioUploading] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
   const [copyingSlug, setCopyingSlug] = useState<string | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderIds, setReorderIds] = useState<string[]>([]);
+  const [reorderSaving, setReorderSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +104,7 @@ export default function PaathAdminPage() {
   }
 
   function toggleExpand(paath: Paath) {
+    if (reorderMode) return;
     if (expandedId === paath._id) {
       setExpandedId(null);
     } else {
@@ -269,12 +273,23 @@ export default function PaathAdminPage() {
           <h1 className="admin-page-title">Paath</h1>
           <p className="admin-page-sub">{paaths.length} paath categories</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openNew}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add Paath
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <button
+            className={`btn btn-sm ${reorderMode ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => {
+              if (!reorderMode) setReorderIds(paaths.map((p) => p._id));
+              setReorderMode(!reorderMode);
+            }}
+          >
+            {reorderMode ? 'Done Reordering' : 'Reorder'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={openNew}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add Paath
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -311,15 +326,106 @@ export default function PaathAdminPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 'var(--space-12)', color: 'var(--color-text-muted)' }}>Loading…</div>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr><th>Name</th><th>Slug</th><th>Entries</th><th>Status</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-              {paaths.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No paath categories yet.</td></tr>
-              ) : paaths.map((p) => (
+        <>
+          {reorderMode && (
+            <div className="reorder-bar">
+              <span>Drag rows to reorder. {reorderIds.length} items.</span>
+              <div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={reorderSaving}
+                  onClick={async () => {
+                    setReorderSaving(true);
+                    try {
+                      const res = await fetch('/api/paath/reorder', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: reorderIds }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        toast.success('Order saved.');
+                        setReorderMode(false);
+                        load();
+                      } else {
+                        toast.error(data.error ?? 'Reorder failed.');
+                      }
+                    } catch {
+                      toast.error('Reorder failed.');
+                    } finally {
+                      setReorderSaving(false);
+                    }
+                  }}
+                >
+                  {reorderSaving ? 'Saving…' : 'Save Order'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setReorderMode(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  {reorderMode && <th style={{ width: 32 }}></th>}
+                  {reorderMode && <th style={{ width: 32 }}>#</th>}
+                  <th>Name</th><th>Slug</th><th>Entries</th><th>Status</th>
+                  {!reorderMode && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {paaths.length === 0 ? (
+                  <tr><td colSpan={reorderMode ? 6 : 5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-10)' }}>No paath categories yet.</td></tr>
+                ) : reorderMode ? reorderIds
+                  .map((id) => paaths.find((p) => p._id === id))
+                  .filter(Boolean)
+                  .map((p, idx) => (
+                  <tr
+                    key={p!._id}
+                    className="reorder-row"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', p!._id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      (e.currentTarget as HTMLElement).classList.add('dragging');
+                    }}
+                    onDragEnd={(e) => {
+                      (e.currentTarget as HTMLElement).classList.remove('dragging');
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData('text/plain');
+                      if (!fromId || fromId === p!._id) return;
+                      setReorderIds((prev) => {
+                        const fromIdx = prev.indexOf(fromId);
+                        const toIdx = prev.indexOf(p!._id);
+                        if (fromIdx === -1 || toIdx === -1) return prev;
+                        const next = [...prev];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        return next;
+                      });
+                    }}
+                  >
+                    <td className="reorder-handle-cell">
+                      <span className="reorder-handle">⠿</span>
+                    </td>
+                    <td className="order-index">{idx + 1}</td>
+                    <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {p!.thumbnail && <img src={getThumbnailUrl(p!.thumbnail)} alt="" className="admin-thumb-sm" />}
+                      {p!.title}
+                    </td>
+                    <td><code style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{p!.slug}</code></td>
+                    <td><span className="count-pill count-total">{p!.entryCount ?? 0}</span></td>
+                    <td>{p!.active ? <span className="badge badge-success">Active</span> : <span className="badge badge-draft">Inactive</span>}</td>
+                  </tr>
+                  )) : paaths.map((p) => (
                 <Fragment key={p._id}>
                   <tr className="paath-row" onClick={() => toggleExpand(p)} style={{ cursor: 'pointer' }}>
                     <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -392,10 +498,11 @@ export default function PaathAdminPage() {
                     </tr>
                   )}
                 </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {showKathaForm && (
@@ -541,6 +648,22 @@ export default function PaathAdminPage() {
         .form-checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-2) 0; }
         .form-checkbox { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); cursor: pointer; }
         .modal-form-actions { display: flex; gap: var(--space-3); justify-content: flex-end; padding-top: var(--space-2); }
+        .reorder-row { cursor: grab; }
+        .reorder-row.dragging { opacity: 0.3; }
+        .reorder-row:hover { background: var(--color-primary-alpha) !important; }
+        .reorder-handle-cell { cursor: grab; text-align: center; }
+        .reorder-handle { font-size: 18px; color: var(--color-text-muted); user-select: none; line-height: 1; }
+        .order-index { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+        .reorder-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: var(--space-3) var(--space-5);
+          background: var(--color-primary-alpha);
+          border: 1px solid var(--color-primary-light);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-4);
+          font-size: var(--font-size-sm); color: var(--color-primary-dark);
+        }
+        .reorder-bar > div { display: flex; gap: var(--space-3); }
       `}</style>
     </div>
   );

@@ -4,6 +4,7 @@ import PaathEntry from '@/models/PaathEntry';
 import Nittnem from '@/models/Nittnem';
 import NittnemEntry from '@/models/NittnemEntry';
 import { DomainError } from '@/lib/domainError';
+import { archiveKathaIfOrphaned } from '@/services/kathaService';
 import mongoose from 'mongoose';
 
 export async function getAllPaaths() {
@@ -40,8 +41,13 @@ export async function deletePaath(slug: string) {
   await connectDB();
   const paath = await Paath.findOneAndDelete({ slug }).lean();
   if (!paath) throw new DomainError('Paath not found', 404);
+  const entries = await PaathEntry.find({ paathId: paath._id }).select('kathaId').lean();
   await PaathEntry.deleteMany({ paathId: paath._id });
-  return paath;
+  let archived = 0;
+  for (const e of entries) {
+    if (e.kathaId && (await archiveKathaIfOrphaned(String(e.kathaId)))) archived++;
+  }
+  return { paath, archived };
 }
 
 export async function getEntries(paathId: string) {
@@ -49,7 +55,11 @@ export async function getEntries(paathId: string) {
   if (!mongoose.Types.ObjectId.isValid(paathId)) throw new DomainError('Invalid paath id', 400);
   return PaathEntry.find({ paathId: new mongoose.Types.ObjectId(paathId) })
     .sort({ order: 1 })
-    .populate('kathaId', 'title slug type thumbnail duration authorName')
+    .populate({
+      path: 'kathaId',
+      select: 'title slug type thumbnail duration authorName',
+      match: { status: { $ne: 'archived' } },
+    })
     .lean();
 }
 
@@ -147,7 +157,8 @@ export async function removeEntry(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) throw new DomainError('Invalid entry id', 400);
   const entry = await PaathEntry.findByIdAndDelete(id).lean();
   if (!entry) throw new DomainError('Entry not found', 404);
-  return entry;
+  const archived = entry.kathaId ? await archiveKathaIfOrphaned(String(entry.kathaId)) : false;
+  return { entry, archived };
 }
 
 export async function reorderEntries(paathId: string, ids: string[]) {

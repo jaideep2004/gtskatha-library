@@ -46,8 +46,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (limited) return limited;
 
     const { slug } = await params;
-    await deleteNittnem(slug);
-    return NextResponse.json({ success: true, message: 'Nitnem list deleted' });
+    const result = await deleteNittnem(slug);
+    return NextResponse.json({ success: true, message: 'Nitnem list deleted', archived: result.archived });
   } catch (error) {
     console.error('DELETE /api/nittnem/[slug]', error);
     return NextResponse.json({ success: false, error: 'Failed to delete Nitnem list' }, { status: 500 });

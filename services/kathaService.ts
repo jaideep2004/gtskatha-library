@@ -407,6 +407,31 @@ export async function archiveKatha(slug: string) {
   );
 }
 
+/**
+ * Archives a katha that no longer belongs to any paath/nitnem list and was
+ * never part of the general library (no series, folder or category).
+ * Called when list entries (or whole lists) are removed, so list-only kathas
+ * go to the archive instead of resurfacing on the homepage/admin list.
+ */
+export async function archiveKathaIfOrphaned(kathaId: string): Promise<boolean> {
+  await connectDB();
+  if (!mongoose.Types.ObjectId.isValid(kathaId)) return false;
+  const oid = new mongoose.Types.ObjectId(kathaId);
+
+  const katha = await Katha.findOne({ _id: oid }).lean();
+  if (!katha || katha.status === 'archived') return false;
+
+  const [paathRef, nittnemRef] = await Promise.all([
+    PaathEntry.exists({ kathaId: oid }),
+    NittnemEntry.exists({ kathaId: oid }),
+  ]);
+  if (paathRef || nittnemRef) return false;
+  if (katha.seriesId || katha.folderId || katha.categoryId) return false;
+
+  await archiveKatha(katha.slug);
+  return true;
+}
+
 export async function getArchivedKathas(params: Pick<KathaSearchParams, 'q' | 'type' | 'page' | 'limit'> = {}) {
   await connectDB();
   const {

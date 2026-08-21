@@ -46,8 +46,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (limited) return limited;
 
     const { slug } = await params;
-    await deletePaath(slug);
-    return NextResponse.json({ success: true, message: 'Paath deleted' });
+    const result = await deletePaath(slug);
+    return NextResponse.json({ success: true, message: 'Paath deleted', archived: result.archived });
   } catch (error) {
     console.error('DELETE /api/paath/[slug]', error);
     return NextResponse.json({ success: false, error: 'Failed to delete paath' }, { status: 500 });

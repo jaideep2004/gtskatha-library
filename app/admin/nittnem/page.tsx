@@ -161,7 +161,7 @@ export default function NittnemAdminPage() {
       const res = await fetch(`/api/nittnem/${slug}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        toast.success(`"${title}" deleted.`);
+        toast.success(data.archived > 0 ? `"${title}" deleted. ${data.archived} katha(s) archived.` : `"${title}" deleted.`);
         load();
       } else toast.error(data.error || 'Delete failed.');
     } catch { toast.error('Delete failed'); }
@@ -207,16 +207,25 @@ export default function NittnemAdminPage() {
         const kathaId = data.data._id ?? data.data.id;
         const parentSlug = showAddEntry;
         if (parentSlug && kathaId) {
-          const entryRes = await fetch(`/api/nittnem/${parentSlug}/entries`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ kathaId }),
-          });
-          const entryData = await entryRes.json();
-          if (entryData.success) {
+          let entryOk = false;
+          for (let attempt = 0; attempt < 2 && !entryOk; attempt++) {
+            const entryRes = await fetch(`/api/nittnem/${parentSlug}/entries`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ kathaId }),
+            });
+            const entryData = await entryRes.json();
+            entryOk = !!entryData.success;
+            if (!entryOk && attempt === 0) await new Promise((r) => setTimeout(r, 600));
+          }
+          if (entryOk) {
             toast.success('Katha created and added as entry.');
           } else {
-            toast.success('Katha created but failed to add as entry.');
+            const createdSlug = data.data?.slug;
+            if (createdSlug) {
+              try { await fetch(`/api/kathas/${createdSlug}`, { method: 'DELETE' }); } catch { /* ignore */ }
+            }
+            toast.success('Katha created but failed to add as entry — katha archived.');
           }
         } else {
           toast.success('Katha created.');
@@ -243,8 +252,8 @@ export default function NittnemAdminPage() {
       const res = await fetch(`/api/nittnem/entries/${entryId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        toast.success('Entry removed.');
-        const list = lists.find(n => n.slug === slug);
+        toast.success(data.archived ? 'Entry removed and katha archived.' : 'Entry removed.');
+        const list = lists.find(l => l.slug === slug);
         if (list) loadEntries(list._id, slug);
         load();
       } else toast.error(data.error || 'Failed to remove entry.');

@@ -2,6 +2,7 @@ import connectDB from '@/lib/db';
 import Nittnem from '@/models/Nittnem';
 import NittnemEntry from '@/models/NittnemEntry';
 import { DomainError } from '@/lib/domainError';
+import { archiveKathaIfOrphaned } from '@/services/kathaService';
 import mongoose from 'mongoose';
 
 export async function getAllNittnems() {
@@ -38,8 +39,13 @@ export async function deleteNittnem(slug: string) {
   await connectDB();
   const nittnem = await Nittnem.findOneAndDelete({ slug }).lean();
   if (!nittnem) throw new DomainError('Nitnem not found', 404);
+  const entries = await NittnemEntry.find({ nittnemId: nittnem._id }).select('kathaId').lean();
   await NittnemEntry.deleteMany({ nittnemId: nittnem._id });
-  return nittnem;
+  let archived = 0;
+  for (const e of entries) {
+    if (e.kathaId && (await archiveKathaIfOrphaned(String(e.kathaId)))) archived++;
+  }
+  return { nittnem, archived };
 }
 
 export async function getEntries(nittnemId: string) {
@@ -47,7 +53,11 @@ export async function getEntries(nittnemId: string) {
   if (!mongoose.Types.ObjectId.isValid(nittnemId)) throw new DomainError('Invalid nittnem id', 400);
   return NittnemEntry.find({ nittnemId: new mongoose.Types.ObjectId(nittnemId) })
     .sort({ order: 1 })
-    .populate('kathaId', 'title slug type thumbnail duration authorName')
+    .populate({
+      path: 'kathaId',
+      select: 'title slug type thumbnail duration authorName',
+      match: { status: { $ne: 'archived' } },
+    })
     .lean();
 }
 
@@ -119,7 +129,8 @@ export async function removeEntry(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) throw new DomainError('Invalid entry id', 400);
   const entry = await NittnemEntry.findByIdAndDelete(id).lean();
   if (!entry) throw new DomainError('Entry not found', 404);
-  return entry;
+  const archived = entry.kathaId ? await archiveKathaIfOrphaned(String(entry.kathaId)) : false;
+  return { entry, archived };
 }
 
 export async function reorderEntries(nittnemId: string, ids: string[]) {

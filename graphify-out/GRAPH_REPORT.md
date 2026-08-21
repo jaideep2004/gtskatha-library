@@ -1,12 +1,12 @@
-# Graph Report - gts-katha  (2026-08-18)
+# Graph Report - gts-katha  (2026-08-21)
 
 ## Corpus Check
-- 204 files · ~558,784 words
+- 204 files · ~559,193 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 623 nodes · 867 edges · 23 communities detected
-- Extraction: 64% EXTRACTED · 36% INFERRED · 0% AMBIGUOUS · INFERRED: 314 edges (avg confidence: 0.8)
+- 624 nodes · 874 edges · 24 communities detected
+- Extraction: 64% EXTRACTED · 36% INFERRED · 0% AMBIGUOUS · INFERRED: 319 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -25,17 +25,18 @@
 - [[_COMMUNITY_Community 12|Community 12]]
 - [[_COMMUNITY_Community 13|Community 13]]
 - [[_COMMUNITY_Community 14|Community 14]]
-- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 15|Community 15]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 20|Community 20]]
-- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 26|Community 26]]
 - [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `connectDB()` - 97 edges
+1. `connectDB()` - 98 edges
 2. `requireAdmin()` - 36 edges
 3. `enforceRateLimit()` - 36 edges
 4. `PUT()` - 16 edges
@@ -47,6 +48,8 @@
 10. `validateKathaInput()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `GET()` --calls--> `connectDB()`  [INFERRED]
+  app\api\homepage\route.ts → lib\db.ts
 - `connectDB()` --calls--> `incrementViews()`  [INFERRED]
   lib\db.ts → services\kathaService.ts
 - `connectDB()` --calls--> `getUnreadCount()`  [INFERRED]
@@ -55,46 +58,44 @@
   services\kathaService.ts → services\uploadService.ts
 - `sitemap()` --calls--> `connectDB()`  [INFERRED]
   app\sitemap.ts → lib\db.ts
-- `HomePage()` --calls--> `getAllSeries()`  [INFERRED]
-  app\(public)\page.tsx → services\seriesService.ts
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.05
-Nodes (44): sitemap(), GET(), POST(), POST(), GET(), POST(), PUT(), DELETE() (+36 more)
+Cohesion: 0.07
+Nodes (39): sitemap(), GET(), POST(), POST(), GET(), POST(), PUT(), connectDB() (+31 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.07
-Nodes (44): DELETE(), PATCH(), POST(), PUT(), DELETE(), GET(), PATCH(), POST() (+36 more)
+Cohesion: 0.06
+Nodes (28): PUT(), DELETE(), PATCH(), POST(), PUT(), GET(), POST(), DELETE() (+20 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (12): handleSubmit(), handleSubmit(), angFromFilename(), compareFilesByAng(), generateSlug(), leadingNumber(), loadEnv(), main() (+4 more)
+Cohesion: 0.09
+Nodes (38): PUT(), DELETE(), GET(), PATCH(), POST(), isSearchQueryReady(), GET(), applyLibraryExclusion() (+30 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.07
-Nodes (23): PUT(), PUT(), generateMetadata(), GET(), POST(), PUT(), POST(), DELETE() (+15 more)
+Nodes (23): generateMetadata(), GET(), POST(), PUT(), DELETE(), PUT(), requireAdmin(), requireUser() (+15 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.1
-Nodes (23): requireAdmin(), requireUser(), isMediaFolder(), validateUpload(), GET(), PUT(), cancelUploadSession(), chunkSize() (+15 more)
+Cohesion: 0.06
+Nodes (6): handleSubmit(), handleSubmit(), GET(), POST(), generateSlug(), handleSubmit()
 
 ### Community 5 - "Community 5"
-Cohesion: 0.09
-Nodes (6): getMediaUrl(), getThumbnailUrl(), createFilename(), FileSystemStorageAdapter, safeFilename(), generateMetadata()
+Cohesion: 0.15
+Nodes (16): isMediaFolder(), validateUpload(), cancelUploadSession(), chunkSize(), completeUploadSession(), createUploadSession(), pruneExpiredSessions(), readCompletion() (+8 more)
 
 ### Community 6 - "Community 6"
+Cohesion: 0.1
+Nodes (17): AudioPage(), GET(), POST(), serializeForClient(), SeriesPage(), GET(), POST(), getCategories() (+9 more)
+
+### Community 7 - "Community 7"
 Cohesion: 0.13
 Nodes (15): GET(), POST(), GET(), PUT(), GET(), DELETE(), mutate(), POST() (+7 more)
 
-### Community 7 - "Community 7"
-Cohesion: 0.12
-Nodes (14): AudioPage(), serializeForClient(), SeriesPage(), GET(), POST(), getCategories(), getKathaParentAssociations(), createSeries() (+6 more)
-
 ### Community 8 - "Community 8"
-Cohesion: 0.18
-Nodes (11): GET(), POST(), recordAudit(), createCategory(), deleteCategory(), getCategoriesWithCount(), getCategoryBySlug(), updateCategory() (+3 more)
+Cohesion: 0.11
+Nodes (3): getMediaUrl(), getThumbnailUrl(), generateMetadata()
 
 ### Community 9 - "Community 9"
 Cohesion: 0.32
@@ -109,46 +110,50 @@ Cohesion: 0.19
 Nodes (4): handleCreateKatha(), loadEntries(), removeEntry(), toggleExpand()
 
 ### Community 12 - "Community 12"
+Cohesion: 0.24
+Nodes (8): angFromFilename(), compareFilesByAng(), leadingNumber(), loadEnv(), main(), panktiFromFilename(), parseArgs(), probeWithConcurrency()
+
+### Community 13 - "Community 13"
 Cohesion: 0.21
 Nodes (4): handleCreateKatha(), loadEntries(), removeEntry(), toggleExpand()
 
-### Community 13 - "Community 13"
+### Community 14 - "Community 14"
 Cohesion: 0.33
 Nodes (9): DELETE(), GET(), POST(), addFavorite(), asItemType(), getUserFavorites(), isFavorited(), removeFavorite() (+1 more)
 
-### Community 14 - "Community 14"
+### Community 15 - "Community 15"
 Cohesion: 0.27
 Nodes (8): GET(), PATCH(), POST(), createNotification(), getNotifications(), getUnreadCount(), getUserNotifications(), markAsRead()
-
-### Community 17 - "Community 17"
-Cohesion: 0.53
-Nodes (4): getSeriesId(), getSeriesSlug(), getSeriesTitle(), KathaArchive()
 
 ### Community 18 - "Community 18"
 Cohesion: 0.47
 Nodes (4): handleChange(), fetchWithRetry(), readPayload(), uploadMediaFile()
 
 ### Community 19 - "Community 19"
+Cohesion: 0.53
+Nodes (4): getSeriesId(), getSeriesSlug(), getSeriesTitle(), KathaArchive()
+
+### Community 20 - "Community 20"
 Cohesion: 0.47
 Nodes (3): loadEnv(), main(), parseArgs()
 
-### Community 20 - "Community 20"
+### Community 21 - "Community 21"
 Cohesion: 0.6
 Nodes (3): createClient(), escapeHtml(), GmailSmtpAdapter
 
-### Community 24 - "Community 24"
+### Community 25 - "Community 25"
 Cohesion: 0.5
 Nodes (2): useTimelineInteractions(), TimelineCommunity()
 
-### Community 25 - "Community 25"
+### Community 26 - "Community 26"
 Cohesion: 0.83
 Nodes (3): first(), parsePage(), parsePageSize()
 
-### Community 33 - "Community 33"
+### Community 34 - "Community 34"
 Cohesion: 0.67
 Nodes (1): DomainError
 
-### Community 34 - "Community 34"
+### Community 35 - "Community 35"
 Cohesion: 1.0
 Nodes (2): loadEnv(), main()
 
@@ -157,24 +162,24 @@ Nodes (2): loadEnv(), main()
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 10`** (14 nodes): `VideoPlayer.tsx`, `trackQualifiedView()`, `viewTracking.ts`, `handleFullscreen()`, `handleSeek()`, `onChapterSeek()`, `onDur()`, `onEnded()`, `onPause()`, `onTime()`, `resetControlsTimeout()`, `seekTo()`, `toggleMute()`, `togglePlay()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 24`** (4 nodes): `TimelineCommunity.tsx`, `useTimelineInteractions.ts`, `useTimelineInteractions()`, `TimelineCommunity()`
+- **Thin community `Community 25`** (4 nodes): `TimelineCommunity.tsx`, `useTimelineInteractions.ts`, `useTimelineInteractions()`, `TimelineCommunity()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 33`** (3 nodes): `DomainError`, `.constructor()`, `domainError.ts`
+- **Thin community `Community 34`** (3 nodes): `DomainError`, `.constructor()`, `domainError.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (3 nodes): `loadEnv()`, `main()`, `migrate-katha-status.ts`
+- **Thin community `Community 35`** (3 nodes): `loadEnv()`, `main()`, `migrate-katha-status.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `connectDB()` connect `Community 0` to `Community 1`, `Community 3`, `Community 4`, `Community 6`, `Community 7`, `Community 8`, `Community 13`, `Community 14`?**
+- **Why does `connectDB()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`, `Community 6`, `Community 7`, `Community 14`, `Community 15`?**
   _High betweenness centrality (0.147) - this node is a cross-community bridge._
-- **Why does `generateSlug()` connect `Community 2` to `Community 8`, `Community 1`, `Community 0`, `Community 7`?**
+- **Why does `generateSlug()` connect `Community 4` to `Community 0`, `Community 1`, `Community 2`, `Community 6`, `Community 12`?**
   _High betweenness centrality (0.063) - this node is a cross-community bridge._
-- **Why does `requireAdmin()` connect `Community 4` to `Community 0`, `Community 1`, `Community 3`, `Community 6`, `Community 7`, `Community 8`, `Community 14`?**
+- **Why does `requireAdmin()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 15`?**
   _High betweenness centrality (0.055) - this node is a cross-community bridge._
-- **Are the 96 inferred relationships involving `connectDB()` (e.g. with `sitemap()` and `HomePage()`) actually correct?**
-  _`connectDB()` has 96 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 97 inferred relationships involving `connectDB()` (e.g. with `sitemap()` and `HomePage()`) actually correct?**
+  _`connectDB()` has 97 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 34 inferred relationships involving `requireAdmin()` (e.g. with `GET()` and `PATCH()`) actually correct?**
   _`requireAdmin()` has 34 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 34 inferred relationships involving `enforceRateLimit()` (e.g. with `PATCH()` and `DELETE()`) actually correct?**
